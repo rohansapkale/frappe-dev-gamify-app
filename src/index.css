@@ -1,0 +1,189 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+
+    --bg-app: #080c16;
+    --bg-card: rgba(15, 23, 42, 0.75);
+    --border-card: rgba(51, 65, 85, 0.5);
+
+    --primary: #3b82f6;
+    --accent-purple: #8b5cf6;
+    --accent-emerald: #10b981;
+    --accent-amber: #f59e0b;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background-color: var(--bg-app);
+    color: #f8fafc;
+    min-height: 100vh;
+    overflow-x: hidden;
+    background-image: 
+      radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.12) 0px, transparent 50%),
+      radial-gradient(at 100% 0%, rgba(139, 92, 246, 0.12) 0px, transparent 50%),
+      radial-gradient(at 50% 100%, rgba(16, 185, 129, 0.08) 0px, transparent 60%);
+    background-attachment: fixed;
+  }
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.5);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(51, 65, 85, 0.7);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.9);
+}
+
+/* Glassmorphism Cards */
+.glass-panel {
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(51, 65, 85, 0.6);
+  border-radius: 14px;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-panel:hover {
+  border-color: rgba(99, 102, 241, 0.45);
+}
+
+.glass-panel-glow {
+  background: rgba(15, 23, 42, 0.8);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(59, 130, 246, 0.4);
+  box-shadow: 0 0 25px -5px rgba(59, 130, 246, 0.35);
+  border-radius: 14px;
+}
+
+/* Frappe Desk Simulation Component Classes */
+.frappe-desk-view {
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 12px;
+  box-shadow: 0 12px 35px -10px rgba(0, 0, 0, 0.65);
+  overflow: hidden;
+  font-family: var(--font-sans);
+}
+
+.frappe-desk-header {
+  background: #1e293b;
+  border-bottom: 1px solid #334155;
+  padding: 12px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.frappe-desk-body {
+  padding: 20px;
+  background: #0b1120;
+}
+
+.frappe-badge-status {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.frappe-status-draft { 
+  background: rgba(245, 158, 11, 0.18); 
+  color: #fbbf24; 
+  border: 1px solid rgba(245, 158, 11, 0.4); 
+}
+.frappe-status-submitted { 
+  background: rgba(16, 185, 129, 0.18); 
+  color: #34d399; 
+  border: 1px solid rgba(16, 185, 129, 0.4); 
+}
+.frappe-status-cancelled { 
+  background: rgba(239, 68, 68, 0.18); 
+  color: #f87171; 
+  border: 1px solid rgba(239, 68, 68, 0.4); 
+}
+
+.frappe-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid transparent;
+}
+
+.frappe-btn-primary {
+  background: #2563eb;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.35);
+}
+.frappe-btn-primary:hover {
+  background: #1d4ed8;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.5);
+  transform: translateY(-1px);
+}
+
+.frappe-btn-default {
+  background: #1e293b;
+  color: #e2e8f0;
+  border: 1px solid #475569;
+}
+.frappe-btn-default:hover {
+  background: #334155;
+  color: #ffffff;
+}
+
+.frappe-btn-custom {
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  color: #ffffff;
+  border: 1px solid rgba(167, 139, 250, 0.5);
+  box-shadow: 0 4px 14px rgba(124, 58, 237, 0.35);
+}
+.frappe-btn-custom:hover {
+  background: linear-gradient(135deg, #4338ca 0%, #6d28d9 100%);
+  box-shadow: 0 6px 20px rgba(124, 58, 237, 0.55);
+  transform: translateY(-1px);
+}
+
+/* Monospace Terminal Styling */
+.terminal-window {
+  background: #050811;
+  border: 1px solid #1e293b;
+  border-radius: 12px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: #cbd5e1;
+  overflow: hidden;
+}
+
+/* Micro-animations */
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-slide-down {
+  animation: slideDown 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+code, pre, textarea {
+  font-family: var(--font-mono);
+}
