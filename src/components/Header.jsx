@@ -32,6 +32,7 @@ export default function Header({
   setSoundEnabled,
   onOpenAchievements,
   onOpenAuthModal,
+  onLogout,
   onResetProgress
 }) {
   const { xp, level, rank, coins, streak, completedQuests } = userStats;
@@ -96,19 +97,72 @@ export default function Header({
           {/* User Profile Selector Pill */}
           <div className="relative pr-2 border-r border-slate-800">
             <button
-              onClick={() => { sounds.playClick(); onOpenAuthModal(); }}
-              className="flex items-center gap-2 p-1 rounded-xl hover:bg-slate-800 transition-colors text-left"
-              title="Click to switch profile or sign in"
+              onClick={() => { sounds.playClick(); setProfileDropdown(!profileDropdown); }}
+              className="flex items-center gap-2 p-1 rounded-xl hover:bg-slate-800 transition-colors text-left cursor-pointer"
+              title="Click to manage profile or sign out"
             >
-              <span className="text-2xl">{currentUser?.avatar || '👨‍💻'}</span>
+              <div className="relative">
+                <span className="text-2xl">{currentUser?.avatar || '👨‍💻'}</span>
+                {currentUser?.authProvider === 'google' && (
+                  <span className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-white rounded-full flex items-center justify-center shadow-sm">
+                    <span className="text-[9px] font-bold text-blue-600">G</span>
+                  </span>
+                )}
+              </div>
               <div className="hidden sm:block">
                 <div className="text-xs font-bold text-slate-200 flex items-center gap-1">
                   <span>{currentUser?.name || 'Developer'}</span>
-                  <ChevronDown className="w-3 h-3 text-slate-400" />
+                  <ChevronDown className={`w-3 h-3 text-slate-400 transition-transform ${profileDropdown ? 'rotate-180' : ''}`} />
                 </div>
                 <div className="text-[10px] text-blue-400 font-semibold">{currentUser?.role || 'Frappe Dev'}</div>
               </div>
             </button>
+
+            {/* Profile Dropdown Menu */}
+            {profileDropdown && (
+              <div className="absolute left-0 top-full mt-2 w-56 bg-slate-900 border border-slate-700/80 rounded-2xl p-2 shadow-2xl shadow-slate-950/80 z-50 animate-slide-down">
+                <div className="p-2.5 bg-slate-950/60 rounded-xl mb-1.5 border border-slate-800">
+                  <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                    <span>{currentUser?.name}</span>
+                    {currentUser?.authProvider === 'google' && (
+                      <span className="px-1.5 py-0.2 rounded-full bg-blue-500/20 text-blue-300 text-[9px] font-bold border border-blue-500/30">
+                        Google
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-[10px] text-slate-400 truncate">@{currentUser?.username || 'dev'}</div>
+                  <div className="text-[10px] text-purple-400 font-semibold mt-1">
+                    {rank.title} • {xp} XP
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    sounds.playClick();
+                    setProfileDropdown(false);
+                    onOpenAuthModal();
+                  }}
+                  className="w-full text-left p-2 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800 flex items-center gap-2 transition-colors cursor-pointer"
+                >
+                  <User className="w-3.5 h-3.5 text-blue-400" />
+                  <span>Switch Account / Manage</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    sounds.playClick();
+                    setProfileDropdown(false);
+                    if (onLogout) onLogout();
+                  }}
+                  className="w-full text-left p-2 rounded-xl text-xs font-semibold text-red-400 hover:text-red-300 hover:bg-red-950/40 flex items-center gap-2 transition-colors cursor-pointer mt-1"
+                >
+                  <LogOut className="w-3.5 h-3.5 text-red-400" />
+                  <span>Log Out of Session</span>
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Level & Rank Progress */}
