@@ -9,15 +9,30 @@ import SkillTreeMode from './components/SkillTreeMode';
 import AchievementsModal from './components/AchievementsModal';
 import LeaderboardMode from './components/LeaderboardMode';
 import AuthModal from './components/AuthModal';
+import AuthGateway from './components/AuthGateway';
 import AgentCompanion from './components/AgentCompanion';
 import AgentJourneyMode from './components/AgentJourneyMode';
 
-import { DEVELOPER_RANKS, BADGES } from './data/achievements';
-import { QUESTS } from './data/quests';
+import { DEVELOPER_RANKS } from './data/achievements';
 import { authStorage } from './utils/authStorage';
 import { triggerConfetti, triggerLevelUpConfetti } from './utils/confettiHelper';
 import { sounds } from './utils/soundEffects';
 import { agentBrain } from './utils/agentBrain';
+
+// Helper function to calculate rank from XP
+const getRankInfo = (currentXp = 0) => {
+  let currentRank = DEVELOPER_RANKS[0];
+  for (let i = DEVELOPER_RANKS.length - 1; i >= 0; i--) {
+    if (currentXp >= DEVELOPER_RANKS[i].minXp) {
+      currentRank = {
+        ...DEVELOPER_RANKS[i],
+        nextMinXp: DEVELOPER_RANKS[i + 1]?.minXp || (DEVELOPER_RANKS[i].minXp + 600)
+      };
+      break;
+    }
+  }
+  return currentRank;
+};
 
 export default function App() {
   // Active User session & persistent data
@@ -34,7 +49,7 @@ export default function App() {
   const [sandboxCount, setSandboxCount] = useState(0);
 
   // App Navigation & Modals
-  const [currentMode, setCurrentMode] = useState('quests'); // 'quests' | 'quiz' | 'leaderboard' | 'sandbox' | 'docs' | 'tree'
+  const [currentMode, setCurrentMode] = useState('quests'); // 'quests' | 'quiz' | 'leaderboard' | 'sandbox' | 'docs' | 'tree' | 'agent'
   const [activeQuest, setActiveQuest] = useState(null);
   const [showAchievements, setShowAchievements] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -54,19 +69,26 @@ export default function App() {
   // Sync state when active user changes
   const syncWithUser = (user) => {
     setCurrentUser(user);
-    setXp(user.xp || 0);
-    setCoins(user.coins || 50);
-    setStreak(user.streak || 1);
-    setCompletedQuests(user.completedQuests || []);
-    setUnlockedBadges(user.unlockedBadges || []);
-    setUnlockedSkills(user.unlockedSkills || ['node-client-basics']);
+    setXp(user?.xp || 0);
+    setCoins(user?.coins || 50);
+    setStreak(user?.streak || 1);
+    setCompletedQuests(user?.completedQuests || []);
+    setUnlockedBadges(user?.unlockedBadges || []);
+    setUnlockedSkills(user?.unlockedSkills || ['node-client-basics']);
     setLeaderboard(authStorage.getLeaderboard());
+  };
+
+  // Log out current user and return to authentication gateway
+  const handleLogout = () => {
+    authStorage.logout();
+    setCurrentUser(null);
+    sounds.playClick();
   };
 
   // Persist active user data on state change
   useEffect(() => {
     if (currentUser) {
-      const updated = authStorage.updateCurrentUserData({
+      authStorage.updateCurrentUserData({
         xp,
         coins,
         streak,
@@ -78,22 +100,7 @@ export default function App() {
       });
       setLeaderboard(authStorage.getLeaderboard());
     }
-  }, [xp, coins, streak, completedQuests, unlockedBadges, unlockedSkills]);
-
-  // Compute Current Developer Rank & Level
-  const getRankInfo = (currentXp) => {
-    let currentRank = DEVELOPER_RANKS[0];
-    for (let i = DEVELOPER_RANKS.length - 1; i >= 0; i--) {
-      if (currentXp >= DEVELOPER_RANKS[i].minXp) {
-        currentRank = {
-          ...DEVELOPER_RANKS[i],
-          nextMinXp: DEVELOPER_RANKS[i + 1]?.minXp || (DEVELOPER_RANKS[i].minXp + 600)
-        };
-        break;
-      }
-    }
-    return currentRank;
-  };
+  }, [xp, coins, streak, completedQuests, unlockedBadges, unlockedSkills, currentUser?.id]);
 
   const rank = getRankInfo(xp);
   const level = rank.level;
@@ -142,7 +149,6 @@ export default function App() {
     setUnlockedBadges(toUnlock);
   };
 
-
   const handleCompleteQuest = (quest) => {
     const isFirstTime = !completedQuests.includes(quest.id);
     const newCompleted = isFirstTime ? [...completedQuests, quest.id] : completedQuests;
@@ -155,7 +161,7 @@ export default function App() {
     }
   };
 
-  const handleDailyQuizComplete = ({ date, score, total }) => {
+  const handleDailyQuizComplete = ({ score }) => {
     // Record in user history and award completion bonus
     const bonusXp = score * 20 + 50;
     const bonusCoins = score * 5 + 20;
@@ -204,6 +210,15 @@ export default function App() {
     }
   };
 
+  // If user is not authenticated, render the Authentication Gateway
+  if (!currentUser) {
+    return (
+      <AuthGateway 
+        onAuthSuccess={(user) => syncWithUser(user)} 
+      />
+    );
+  }
+
   const userStats = {
     xp,
     level,
@@ -229,6 +244,7 @@ export default function App() {
         setSoundEnabled={setSoundEnabled}
         onOpenAchievements={() => setShowAchievements(true)}
         onOpenAuthModal={() => setShowAuthModal(true)}
+        onLogout={handleLogout}
         onResetProgress={handleResetProgress}
       />
 
@@ -253,9 +269,7 @@ export default function App() {
         )}
 
         {/* Mode 2: Daily 10-MCQ Bug Hunt */}
-
         {currentMode === 'quiz' && (
-
           <DailyQuizMode
             currentUser={currentUser}
             onDailyQuizComplete={handleDailyQuizComplete}
@@ -347,6 +361,7 @@ export default function App() {
         <AuthModal
           currentUser={currentUser}
           onLoginSuccess={(user) => syncWithUser(user)}
+          onLogout={handleLogout}
           onClose={() => setShowAuthModal(false)}
         />
       )}

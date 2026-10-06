@@ -1,17 +1,20 @@
 // User Authentication, Isolated Storage & Global Leaderboard Engine
 
-const USERS_STORAGE_KEY = 'frappequest_users_v2';
-const CURRENT_SESSION_KEY = 'frappequest_active_user_v2';
+const USERS_STORAGE_KEY = 'frappequest_users_v3';
+const CURRENT_SESSION_KEY = 'frappequest_active_user_v3';
 
-// Pre-seeded community developers for realistic leaderboard rankings
+// Pre-seeded community developers for realistic leaderboard rankings & demo testing
 const DEFAULT_DEVELOPERS = [
   {
     id: 'user-01',
     username: 'rohan_frappe',
+    email: 'rohan@frappe.io',
+    password: 'password123',
     name: 'Rohan Sharma',
     role: 'Frappe Developer',
     avatar: '👨‍💻',
     specialization: 'Custom App Architecture',
+    authProvider: 'local',
     xp: 2150,
     coins: 720,
     streak: 8,
@@ -28,10 +31,13 @@ const DEFAULT_DEVELOPERS = [
   {
     id: 'user-02',
     username: 'farhan_erp',
+    email: 'farhan@erpnext.org',
+    password: 'password123',
     name: 'Farhan Akhtar',
     role: 'ERPNext Architect',
     avatar: '🧙‍♂️',
     specialization: 'Accounts & GL Engines',
+    authProvider: 'local',
     xp: 1840,
     coins: 610,
     streak: 6,
@@ -47,10 +53,13 @@ const DEFAULT_DEVELOPERS = [
   {
     id: 'user-03',
     username: 'priya_core',
+    email: 'priya@frappe.io',
+    password: 'password123',
     name: 'Priya Nair',
     role: 'System Manager',
     avatar: '👩‍💻',
     specialization: 'Security & Whitelisting',
+    authProvider: 'local',
     xp: 1420,
     coins: 480,
     streak: 5,
@@ -66,10 +75,13 @@ const DEFAULT_DEVELOPERS = [
   {
     id: 'user-04',
     username: 'alex_desk',
+    email: 'alex@erpnext.dev',
+    password: 'password123',
     name: 'Alex Rivera',
     role: 'Frappe Junior Dev',
     avatar: '🚀',
     specialization: 'Desk UI & Client Scripts',
+    authProvider: 'local',
     xp: 880,
     coins: 290,
     streak: 3,
@@ -95,11 +107,6 @@ class AuthStorageService {
       const existing = localStorage.getItem(USERS_STORAGE_KEY);
       if (!existing) {
         localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(DEFAULT_DEVELOPERS));
-      }
-      const active = localStorage.getItem(CURRENT_SESSION_KEY);
-      if (!active) {
-        // Default login as first user
-        localStorage.setItem(CURRENT_SESSION_KEY, JSON.stringify(DEFAULT_DEVELOPERS[0]));
       }
     } catch (e) {
       console.error('Storage init error:', e);
@@ -127,46 +134,77 @@ class AuthStorageService {
     try {
       const active = localStorage.getItem(CURRENT_SESSION_KEY);
       if (active) return JSON.parse(active);
-      return DEFAULT_DEVELOPERS[0];
+      return null; // Return null so authentication layer is triggered if not logged in
     } catch (e) {
-      return DEFAULT_DEVELOPERS[0];
+      return null;
     }
   }
 
   setCurrentUser(user) {
     try {
-      localStorage.setItem(CURRENT_SESSION_KEY, JSON.stringify(user));
-    } catch (e) {}
+      if (!user) {
+        localStorage.removeItem(CURRENT_SESSION_KEY);
+      } else {
+        localStorage.setItem(CURRENT_SESSION_KEY, JSON.stringify(user));
+      }
+    } catch (e) {
+      console.error('Set current user error:', e);
+    }
   }
 
-  login(username, password) {
+  login(identifier, password) {
     const users = this.getAllUsers();
-    const cleanUsername = username.trim().toLowerCase();
-    let user = users.find(u => u.username.toLowerCase() === cleanUsername);
+    const cleanId = (identifier || '').trim().toLowerCase();
+    
+    if (!cleanId) {
+      return { success: false, message: 'Please provide a username or email.' };
+    }
+
+    const user = users.find(u => 
+      u.username?.toLowerCase() === cleanId || 
+      u.email?.toLowerCase() === cleanId
+    );
 
     if (!user) {
-      return { success: false, message: 'Developer profile not found with this username.' };
+      return { success: false, message: 'No developer profile found with this username or email.' };
+    }
+
+    // If password was defined on the user account, verify it (ignore if empty in sandbox demo mode)
+    if (user.password && password && user.password !== password) {
+      return { success: false, message: 'Invalid password. Please try again.' };
     }
 
     this.setCurrentUser(user);
     return { success: true, user };
   }
 
-  signup({ username, name, role, specialization, avatar }) {
+  signup({ username, email, password, name, role, specialization, avatar }) {
     const users = this.getAllUsers();
-    const cleanUsername = username.trim().toLowerCase();
+    const cleanUsername = (username || '').trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
+    const cleanEmail = (email || '').trim().toLowerCase();
 
-    if (users.some(u => u.username.toLowerCase() === cleanUsername)) {
+    if (!cleanUsername || cleanUsername.length < 3) {
+      return { success: false, message: 'Username must be at least 3 characters (letters, numbers, underscores).' };
+    }
+
+    if (users.some(u => u.username?.toLowerCase() === cleanUsername)) {
       return { success: false, message: 'Username is already claimed. Please choose another.' };
+    }
+
+    if (cleanEmail && users.some(u => u.email?.toLowerCase() === cleanEmail)) {
+      return { success: false, message: 'An account with this email address already exists.' };
     }
 
     const newUser = {
       id: `user-${Date.now()}`,
       username: cleanUsername,
-      name: name || username,
+      email: cleanEmail || `${cleanUsername}@frappequest.dev`,
+      password: password || 'password123',
+      name: name?.trim() || username,
       role: role || 'Frappe Developer',
-      avatar: avatar || '⚡',
+      avatar: avatar || '👨‍💻',
       specialization: specialization || 'Full-Stack Frappe',
+      authProvider: 'local',
       xp: 0,
       coins: 50,
       streak: 1,
@@ -185,18 +223,97 @@ class AuthStorageService {
     return { success: true, user: newUser };
   }
 
-  logout() {
-    // Revert to demo account or clear
+  loginWithGoogle({ email, name, avatar, googleId }) {
     const users = this.getAllUsers();
-    const guestUser = users[0] || DEFAULT_DEVELOPERS[0];
+    const cleanEmail = (email || 'developer@gmail.com').trim().toLowerCase();
+    
+    // Check if user already exists with this email or googleId
+    let user = users.find(u => 
+      u.email?.toLowerCase() === cleanEmail || 
+      (googleId && u.googleId === googleId)
+    );
+
+    if (user) {
+      // Update google metadata if needed
+      user.authProvider = 'google';
+      if (avatar && !user.avatar) user.avatar = avatar;
+      this.saveAllUsers(users);
+      this.setCurrentUser(user);
+      return { success: true, user, isNew: false };
+    }
+
+    // Create new Google-linked developer profile
+    const derivedUsername = cleanEmail.split('@')[0].replace(/[^a-z0-9_]/g, '_') + '_' + Math.floor(100 + Math.random() * 900);
+    const newUser = {
+      id: `google-${googleId || Date.now()}`,
+      googleId: googleId || `gid-${Date.now()}`,
+      username: derivedUsername,
+      email: cleanEmail,
+      name: name || 'Google Developer',
+      role: 'Frappe Developer',
+      avatar: avatar || '🌐',
+      specialization: 'Custom App Architecture',
+      authProvider: 'google',
+      xp: 0,
+      coins: 50,
+      streak: 1,
+      level: 1,
+      rankTitle: 'Desk Newbie',
+      completedQuests: [],
+      unlockedBadges: [],
+      unlockedSkills: ['node-client-basics'],
+      dailyQuizHistory: {}
+    };
+
+    users.push(newUser);
+    this.saveAllUsers(users);
+    this.setCurrentUser(newUser);
+
+    return { success: true, user: newUser, isNew: true };
+  }
+
+  loginAsGuest() {
+    const guestUser = {
+      id: `guest-${Date.now()}`,
+      username: `guest_${Math.floor(1000 + Math.random() * 9000)}`,
+      email: 'guest@frappequest.dev',
+      name: 'Guest Explorer',
+      role: 'Frappe Explorer',
+      avatar: '🚀',
+      specialization: 'Desk UI & Client Scripts',
+      authProvider: 'guest',
+      xp: 0,
+      coins: 50,
+      streak: 1,
+      level: 1,
+      rankTitle: 'Desk Newbie',
+      completedQuests: [],
+      unlockedBadges: [],
+      unlockedSkills: ['node-client-basics'],
+      dailyQuizHistory: {}
+    };
+
+    const users = this.getAllUsers();
+    users.push(guestUser);
+    this.saveAllUsers(users);
     this.setCurrentUser(guestUser);
     return guestUser;
   }
 
+  logout() {
+    try {
+      localStorage.removeItem(CURRENT_SESSION_KEY);
+    } catch (e) {
+      console.error('Logout error:', e);
+    }
+    return null;
+  }
+
   updateCurrentUserData(updates) {
     const currentUser = this.getCurrentUser();
-    const updatedUser = { ...currentUser, ...updates };
+    if (!currentUser) return null;
 
+    const updatedUser = { ...currentUser, ...updates };
     const users = this.getAllUsers();
     const index = users.findIndex(u => u.id === currentUser.id);
     if (index !== -1) {
