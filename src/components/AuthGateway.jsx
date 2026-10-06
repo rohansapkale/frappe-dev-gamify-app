@@ -17,11 +17,14 @@ import {
   Zap, 
   Flame,
   Brain,
-  Code2
+  Code2,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { authStorage } from '../utils/authStorage';
 import { sounds } from '../utils/soundEffects';
 import { triggerConfetti } from '../utils/confettiHelper';
+import { useTheme } from '../context/ThemeContext';
 
 const AVATARS = ['👨‍💻', '👩‍💻', '🧙‍♂️', '⚡', '🚀', '🛡️', '🎯', '👑', '🤖'];
 const ROLES = [
@@ -39,6 +42,7 @@ const SPECIALIZATIONS = [
 ];
 
 export default function AuthGateway({ onAuthSuccess }) {
+  const { theme, toggleTheme, isDark } = useTheme();
   const [tab, setTab] = useState('login'); // 'login' | 'signup' | 'profiles'
   const [showGoogleModal, setShowGoogleModal] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -159,6 +163,28 @@ export default function AuthGateway({ onAuthSuccess }) {
 
   return (
     <div className="min-h-screen bg-[#060913] text-slate-100 flex flex-col justify-center items-center px-4 py-8 relative overflow-hidden selection:bg-blue-600 selection:text-white">
+      {/* Top Floating Theme Switcher */}
+      <div className="absolute top-4 right-4 z-30">
+        <button
+          type="button"
+          onClick={toggleTheme}
+          className="px-3 py-1.5 rounded-xl border border-slate-700/80 bg-slate-900/80 backdrop-blur-md text-slate-300 hover:text-white shadow-lg transition-all flex items-center gap-2 cursor-pointer group text-xs font-semibold"
+          title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
+        >
+          {isDark ? (
+            <>
+              <Sun className="w-4 h-4 text-amber-400 group-hover:rotate-45 transition-transform" />
+              <span>Light Mode</span>
+            </>
+          ) : (
+            <>
+              <Moon className="w-4 h-4 text-indigo-400 group-hover:-rotate-12 transition-transform" />
+              <span>Dark Mode</span>
+            </>
+          )}
+        </button>
+      </div>
+
       {/* Background Ambience & Cyber Grid Glow */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(59,130,246,0.18),rgba(255,255,255,0))] pointer-events-none" />
       <div className="absolute -top-40 -left-40 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl pointer-events-none animate-pulse" />

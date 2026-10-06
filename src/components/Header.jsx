@@ -18,10 +18,13 @@ import {
   Target,
   Zap,
   Bot,
-  Brain
+  Brain,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { sounds } from '../utils/soundEffects';
 import { agentBrain } from '../utils/agentBrain';
+import { useTheme } from '../context/ThemeContext';
 
 export default function Header({
   currentUser,
@@ -38,6 +41,7 @@ export default function Header({
   const { xp, level, rank, coins, streak, completedQuests } = userStats;
   const [profileDropdown, setProfileDropdown] = useState(false);
   const [agentIq, setAgentIq] = useState(() => agentBrain.getState()?.iq || 105);
+  const { theme, toggleTheme, isDark } = useTheme();
 
   useEffect(() => {
     const unsub = agentBrain.subscribe(st => {
@@ -219,6 +223,19 @@ export default function Header({
           >
             <Trophy className="w-3.5 h-3.5 text-purple-400" />
             <span className="hidden sm:inline">Badges</span>
+          </button>
+
+          {/* Theme Toggle (Dark / Light) */}
+          <button
+            onClick={toggleTheme}
+            className="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-lg transition-colors cursor-pointer group"
+            title={isDark ? "Switch to Clean Light Studio Theme (T)" : "Switch to Deep Dark Cyberpunk Theme (T)"}
+          >
+            {isDark ? (
+              <Sun className="w-4 h-4 text-amber-400 group-hover:rotate-45 transition-transform" />
+            ) : (
+              <Moon className="w-4 h-4 text-indigo-400 group-hover:-rotate-12 transition-transform" />
+            )}
           </button>
 
           {/* Sound Toggle */}

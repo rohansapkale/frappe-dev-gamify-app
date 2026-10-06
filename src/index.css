@@ -6,6 +6,7 @@
     --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     --font-mono: 'JetBrains Mono', monospace;
 
+    /* Theme Tokens (designskills.dev inspired) */
     --bg-app: #080c16;
     --bg-card: rgba(15, 23, 42, 0.75);
     --border-card: rgba(51, 65, 85, 0.5);
@@ -27,6 +28,16 @@
       radial-gradient(at 100% 0%, rgba(139, 92, 246, 0.12) 0px, transparent 50%),
       radial-gradient(at 50% 100%, rgba(16, 185, 129, 0.08) 0px, transparent 60%);
     background-attachment: fixed;
+    transition: background-color 0.25s ease, color 0.25s ease;
+  }
+
+  body.light, html.light body {
+    background-color: #f8fafc;
+    color: #0f172a;
+    background-image: 
+      radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.08) 0px, transparent 50%),
+      radial-gradient(at 100% 0%, rgba(139, 92, 246, 0.08) 0px, transparent 50%),
+      radial-gradient(at 50% 100%, rgba(16, 185, 129, 0.05) 0px, transparent 60%);
   }
 }
 
@@ -38,12 +49,21 @@
 ::-webkit-scrollbar-track {
   background: rgba(15, 23, 42, 0.5);
 }
+.light ::-webkit-scrollbar-track {
+  background: rgba(241, 245, 249, 0.7);
+}
 ::-webkit-scrollbar-thumb {
   background: rgba(51, 65, 85, 0.7);
   border-radius: 4px;
 }
+.light ::-webkit-scrollbar-thumb {
+  background: rgba(203, 213, 225, 0.9);
+}
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(100, 116, 139, 0.9);
+}
+.light ::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 1);
 }
 
 /* Glassmorphism Cards */
@@ -60,12 +80,28 @@
   border-color: rgba(99, 102, 241, 0.45);
 }
 
+.light .glass-panel {
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
+}
+.light .glass-panel:hover {
+  border-color: rgba(99, 102, 241, 0.5);
+  box-shadow: 0 8px 25px -4px rgba(99, 102, 241, 0.1);
+}
+
 .glass-panel-glow {
   background: rgba(15, 23, 42, 0.8);
   backdrop-filter: blur(12px);
   border: 1px solid rgba(59, 130, 246, 0.4);
   box-shadow: 0 0 25px -5px rgba(59, 130, 246, 0.35);
   border-radius: 14px;
+}
+
+.light .glass-panel-glow {
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(59, 130, 246, 0.5);
+  box-shadow: 0 4px 25px -5px rgba(59, 130, 246, 0.25);
 }
 
 /* Frappe Desk Simulation Component Classes */
@@ -186,4 +222,170 @@
 
 code, pre, textarea {
   font-family: var(--font-mono);
+}
+
+/* =========================================================================
+   designskills.dev Inspired Light & Dark Editorial System
+   ========================================================================= */
+
+/* Light Mode Global Adaptive Overrides */
+html.light,
+body.light {
+  color-scheme: light;
+}
+
+html.light body,
+body.light {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+/* Base surface containers */
+html.light .bg-\[\#080c16\],
+html.light .bg-\[\#060913\],
+body.light .bg-\[\#080c16\],
+body.light .bg-\[\#060913\] {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+/* Glass & Card Backgrounds */
+html.light .bg-slate-950,
+html.light .bg-slate-950\/90,
+html.light .bg-slate-950\/85,
+html.light .bg-slate-950\/80,
+html.light .bg-slate-950\/70,
+html.light .bg-slate-950\/60,
+body.light .bg-slate-950,
+body.light .bg-slate-950\/90,
+body.light .bg-slate-950\/85,
+body.light .bg-slate-950\/80,
+body.light .bg-slate-950\/70,
+body.light .bg-slate-950\/60 {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+}
+
+html.light .bg-slate-900,
+html.light .bg-slate-900\/90,
+html.light .bg-slate-900\/80,
+html.light .bg-slate-900\/70,
+html.light .bg-slate-900\/60,
+body.light .bg-slate-900,
+body.light .bg-slate-900\/90,
+body.light .bg-slate-900\/80,
+body.light .bg-slate-900\/70,
+body.light .bg-slate-900\/60 {
+  background-color: #ffffff !important;
+  box-shadow: 0 4px 18px -2px rgba(15, 23, 42, 0.06);
+}
+
+/* Hairline Structural Borders (designskills.dev style) */
+html.light .border-slate-800,
+html.light .border-slate-800\/80,
+html.light .border-slate-800\/60,
+html.light .border-slate-800\/40,
+html.light .border-slate-700,
+html.light .border-slate-700\/80,
+body.light .border-slate-800,
+body.light .border-slate-800\/80,
+body.light .border-slate-800\/60,
+body.light .border-slate-800\/40,
+body.light .border-slate-700,
+body.light .border-slate-700\/80 {
+  border-color: #e2e8f0 !important;
+}
+
+/* Typography ink contrast */
+html.light .text-slate-100,
+html.light .text-slate-200,
+body.light .text-slate-100,
+body.light .text-slate-200 {
+  color: #0f172a !important;
+}
+
+html.light .text-slate-300,
+body.light .text-slate-300 {
+  color: #334155 !important;
+}
+
+html.light .text-slate-400,
+body.light .text-slate-400 {
+  color: #64748b !important;
+}
+
+html.light .text-slate-500,
+body.light .text-slate-500 {
+  color: #94a3b8 !important;
+}
+
+/* Interactive Hovers */
+html.light .hover\:bg-slate-800:hover,
+html.light .hover\:bg-slate-800\/80:hover,
+body.light .hover\:bg-slate-800:hover,
+body.light .hover\:bg-slate-800\/80:hover {
+  background-color: #f1f5f9 !important;
+}
+
+html.light .hover\:bg-slate-900\/60:hover,
+html.light .hover\:bg-slate-900:hover,
+body.light .hover\:bg-slate-900\/60:hover,
+body.light .hover\:bg-slate-900:hover {
+  background-color: #f8fafc !important;
+}
+
+/* Form Elements */
+html.light input:not([type="checkbox"]):not([type="radio"]),
+html.light select,
+html.light textarea,
+body.light input:not([type="checkbox"]):not([type="radio"]),
+body.light select,
+body.light textarea {
+  background-color: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+html.light input::placeholder,
+html.light textarea::placeholder,
+body.light input::placeholder,
+body.light textarea::placeholder {
+  color: #94a3b8 !important;
+}
+
+/* Keep code and terminal in deep contrast */
+html.light .terminal-window,
+body.light .terminal-window {
+  background-color: #0c101c !important;
+  color: #e2e8f0 !important;
+}
+
+html.light .frappe-desk-view,
+body.light .frappe-desk-view {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.08);
+}
+
+html.light .frappe-desk-header,
+body.light .frappe-desk-header {
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+html.light .frappe-desk-body,
+body.light .frappe-desk-body {
+  background: #f8fafc;
+}
+
+html.light .frappe-btn-default,
+body.light .frappe-btn-default {
+  background: #ffffff;
+  color: #1e293b;
+  border: 1px solid #cbd5e1;
+}
+
+html.light .frappe-btn-default:hover,
+body.light .frappe-btn-default:hover {
+  background: #f1f5f9;
+  color: #0f172a;
 }
