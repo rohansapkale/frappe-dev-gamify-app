@@ -97,3 +97,28 @@ npm run dev
 # Open in browser
 http://localhost:5173/
 ```
+
+---
+
+## ⚡ Deployment to Vercel
+
+### Option 1: Vercel Web Dashboard (1-Click)
+1. Go to [vercel.com/new](https://vercel.com/new) and log in with your GitHub account.
+2. Select your repository: `rohansapkale/frappe-dev-gamify-app`.
+3. Vercel automatically detects the preset:
+   - **Framework Preset**: `Vite`
+   - **Build Command**: `npm run build`
+   - **Output Directory**: `dist`
+4. Click **Deploy**.
+
+### Option 2: Vercel CLI
+```bash
+# Login to Vercel
+npx vercel login
+
+# Deploy to Preview
+npx vercel
+
+# Deploy to Production
+npx vercel --prod
+```
