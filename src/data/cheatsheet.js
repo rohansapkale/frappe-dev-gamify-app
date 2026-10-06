@@ -175,5 +175,91 @@ def calculate_custom_tax(amount, tax_tier):
         tags: ['Workers', 'Redis', 'Async']
       }
     ]
+  },
+  {
+    category: 'Frappe CRM: Workflow Automations & Rules',
+    items: [
+      {
+        name: 'Workflow Automation Architecture',
+        syntax: `Settings > Automation & Rules > Workflow Automations`,
+        description: 'Visual flow automation system consisting of Trigger (Event), Filters, Flow Blocks (If/Else, Wait), Actions, and Run As permissions.',
+        example: `// Example: Welcome new website leads flow
+frappe.crm.automation({
+    title: 'Welcome new website leads',
+    doctype: 'CRM Lead',
+    event: 'Record is created',
+    filters: [{ field: 'source', operator: 'Equals', value: 'Website' }],
+    run_as: 'Automation User',
+    steps: [
+        { action: 'Email the Lead or Deal', email_template: 'Web Lead Welcome' },
+        { block: 'Wait', wait: 2, unit: 'Days' },
+        { block: 'If / Else', condition: 'doc.status == "New"', true_branch: [
+            { action: 'Notify in CRM', recipients: 'Document owner', message: '{{ doc.lead_name }} has not been contacted yet' }
+        ]}
+    ]
+});`,
+        tags: ['CRM', 'Workflow', 'Automations']
+      },
+      {
+        name: 'Jinja Templating & Context Passing',
+        syntax: `{{ doc.field_name }} | {{ trigger.name }} | {{ context.steps.step_name.prop }}`,
+        description: 'Dynamic field interpolation in subjects, messages, and webhook payloads. Steps access outputs of earlier named steps.',
+        example: `// Access record field:
+"Welcome to Acme, {{ doc.first_name }}"
+
+// Access output from an earlier step named 'score_boost':
+"Lead {{ doc.lead_name }} is now at {{ context.steps.score_boost.new_value }} points"`,
+        tags: ['CRM', 'Jinja', 'Context']
+      },
+      {
+        name: 'Wait for Event Block',
+        syntax: `Wait for event (wait_for, belonging_to, timeout, unit)`,
+        description: 'Pauses run until an event arrives (e.g. prospect replied) or timeout expires. Branching splits into Event Happened vs Timed Out.',
+        example: `{
+    block: 'Wait for event',
+    wait_for: 'The prospect replied',
+    belonging_to: 'This email thread',
+    timeout: 3,
+    unit: 'Days',
+    event_happened_branch: [
+        { action: 'Adjust Lead Score', amount: 10 },
+        { action: 'Set Lead Temperature', temperature: 'Hot' }
+    ],
+    timed_out_branch: [
+        { action: 'Notify in CRM', recipients: 'Document owner', message: 'No reply in 3 days' }
+    ]
+}`,
+        tags: ['CRM', 'Blocks', 'Events']
+      },
+      {
+        name: 'CRM Actions vs Core Actions',
+        syntax: `CRM: Email, Score, Temperature, Convert | Core: Create Document, Webhook, Assign`,
+        description: 'CRM actions target leads/deals specifically; Core actions work across any DocType (creating ToDos, updating fields, HTTP webhooks).',
+        example: `// Create Document (ToDo linked to Deal)
+{
+    action: 'Create Document',
+    document_type: 'ToDo',
+    field_values: {
+        title: 'Kick-off call with {{ doc.organization }}',
+        reference_doctype: 'CRM Deal',
+        reference_docname: '{{ doc.name }}',
+        assigned_to: '{{ doc.deal_owner }}'
+    }
+}`,
+        tags: ['CRM', 'Actions', 'ToDo']
+      },
+      {
+        name: 'Test Run & Safety Rollback',
+        syntax: `Test Run Tab > Select Record > Start Test Run`,
+        description: 'Runs entire automation against an existing record, simulating wait times, previewing webhook payloads, and immediately rolling back all database mutations.',
+        example: `// In Test Run:
+// 1. Wait blocks are simulated (no real delay)
+// 2. Wait for event takes 'Timed out' branch by default
+// 3. Webhooks report payload without network dispatch
+// 4. All modified fields revert to original values on completion`,
+        tags: ['CRM', 'Test Run', 'Rollback']
+      }
+    ]
   }
 ];
+

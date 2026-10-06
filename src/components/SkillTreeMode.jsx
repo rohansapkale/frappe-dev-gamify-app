@@ -13,7 +13,8 @@ import {
   Database, 
   Cpu, 
   Crown,
-  ChevronDown
+  ChevronDown,
+  Zap
 } from 'lucide-react';
 import { sounds } from '../utils/soundEffects';
 
@@ -25,8 +26,10 @@ const ICON_MAP = {
   Server,
   Database,
   Cpu,
-  Crown
+  Crown,
+  Zap
 };
+
 
 export default function SkillTreeMode({ unlockedSkills = [], userXp = 0, onUnlockSkill }) {
   // Group skills by tier

@@ -13,7 +13,12 @@ import {
   X,
   Layers,
   Sparkles,
-  MousePointerClick
+  MousePointerClick,
+  Flame,
+  TrendingUp,
+  CheckSquare,
+  Briefcase,
+  Mail
 } from 'lucide-react';
 import { sounds } from '../utils/soundEffects';
 
@@ -308,6 +313,220 @@ export default function DeskSimulator({
                 ${Number(doc.total_amount !== undefined ? doc.total_amount : doc.grand_total || 0).toLocaleString()}
               </div>
             </div>
+          )}
+
+          {/* CRM Lead Specific Fields */}
+          {doc.doctype === 'CRM Lead' && (
+            <>
+              {/* Lead Name */}
+              <div className="space-y-1">
+                <label className="text-[11px] font-medium text-slate-400">Lead Name / Prospect</label>
+                <input
+                  type="text"
+                  readOnly
+                  value={doc.lead_name || doc.name || ''}
+                  className="w-full bg-slate-950 border border-slate-800 rounded px-2.5 py-1.5 text-xs text-slate-200"
+                />
+              </div>
+
+              {/* Email */}
+              <div className="space-y-1">
+                <label className="text-[11px] font-medium text-slate-400 flex items-center justify-between">
+                  <span>Email Address</span>
+                  <Mail className="w-3 h-3 text-slate-500" />
+                </label>
+                <input
+                  type="email"
+                  readOnly
+                  value={doc.email_id || ''}
+                  className="w-full bg-slate-950 border border-slate-800 rounded px-2.5 py-1.5 text-xs text-blue-300 font-mono"
+                />
+              </div>
+
+              {/* Lead Score & Meter */}
+              {doc.lead_score !== undefined && (
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="font-medium text-slate-400 flex items-center gap-1">
+                      <TrendingUp className="w-3 h-3 text-cyan-400" />
+                      <span>Lead Score</span>
+                    </span>
+                    <span className="font-bold text-cyan-400">{doc.lead_score} / 100</span>
+                  </div>
+                  <div className="w-full bg-slate-950 border border-slate-800 rounded-full h-2 overflow-hidden">
+                    <div 
+                      className={`h-full transition-all duration-500 ${
+                        doc.lead_score >= 75 ? 'bg-gradient-to-r from-orange-500 to-red-500' :
+                        doc.lead_score >= 35 ? 'bg-gradient-to-r from-amber-500 to-yellow-400' :
+                        'bg-gradient-to-r from-blue-600 to-cyan-400'
+                      }`}
+                      style={{ width: `${Math.min(100, Math.max(0, doc.lead_score))}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Lead Temperature */}
+              {doc.temperature !== undefined && (
+                <div className="space-y-1">
+                  <label className="text-[11px] font-medium text-slate-400">Lead Temperature</label>
+                  <div className="flex items-center gap-2">
+                    <span className={`px-2.5 py-1 rounded text-xs font-bold flex items-center gap-1.5 border ${
+                      doc.temperature === 'Hot' ? 'bg-red-950/80 text-red-300 border-red-500/50 shadow-sm shadow-red-500/20' :
+                      doc.temperature === 'Warm' ? 'bg-amber-950/80 text-amber-300 border-amber-500/50' :
+                      'bg-cyan-950/80 text-cyan-300 border-cyan-500/50'
+                    }`}>
+                      <Flame className={`w-3.5 h-3.5 ${doc.temperature === 'Hot' ? 'text-red-400 animate-pulse' : 'text-amber-400'}`} />
+                      <span>{doc.temperature}</span>
+                    </span>
+                    <span className="text-[10px] text-slate-500">Pipeline Priority</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Inactivity SLA Days */}
+              {doc.days_since_contact !== undefined && (
+                <div className="space-y-1">
+                  <label className="text-[11px] font-medium text-slate-400">Days Since Contact</label>
+                  <div className="flex items-center gap-2">
+                    <span className={`px-2 py-1 rounded text-xs font-bold ${
+                      doc.days_since_contact >= 3 
+                        ? 'bg-rose-950/80 text-rose-300 border border-rose-500/50' 
+                        : 'bg-slate-950 text-slate-300 border border-slate-800'
+                    }`}>
+                      {doc.days_since_contact} Days
+                    </span>
+                    {doc.days_since_contact >= 3 && (
+                      <span className="text-[10px] text-rose-400 font-semibold animate-pulse">
+                        ⚠️ 3-Day SLA Exceeded
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Annual Revenue */}
+              {doc.annual_revenue !== undefined && (
+                <div className="space-y-1">
+                  <label className="text-[11px] font-medium text-slate-400">Annual Revenue ($)</label>
+                  <div className="w-full bg-slate-950 border border-slate-800 rounded px-2.5 py-1.5 text-xs font-bold text-emerald-400">
+                    ${Number(doc.annual_revenue).toLocaleString()}
+                  </div>
+                </div>
+              )}
+
+              {/* Territory Rep */}
+              {doc.territory_rep && (
+                <div className="space-y-1">
+                  <label className="text-[11px] font-medium text-slate-400">Assigned Territory Rep</label>
+                  <div className="w-full bg-slate-950 border border-blue-500/40 rounded px-2.5 py-1.5 text-xs font-semibold text-blue-300">
+                    {doc.territory_rep}
+                  </div>
+                </div>
+              )}
+
+              {/* Qualified Date */}
+              {doc.qualified_date && (
+                <div className="space-y-1">
+                  <label className="text-[11px] font-medium text-slate-400">Qualified Date</label>
+                  <div className="w-full bg-slate-950 border border-slate-800 rounded px-2.5 py-1.5 text-xs text-slate-300">
+                    {doc.qualified_date}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+
+          {/* CRM Deal Specific Fields */}
+          {doc.doctype === 'CRM Deal' && (
+            <>
+              {/* Deal Name & Organization */}
+              <div className="space-y-1">
+                <label className="text-[11px] font-medium text-slate-400">Deal & Account</label>
+                <div className="w-full bg-slate-950 border border-slate-800 rounded px-2.5 py-1.5 text-xs font-semibold text-slate-200">
+                  {doc.deal_name || doc.name} ({doc.organization || 'Enterprise'})
+                </div>
+              </div>
+
+              {/* Deal Stage */}
+              <div className="space-y-1">
+                <label className="text-[11px] font-medium text-slate-400">Deal Stage</label>
+                <div className="flex items-center gap-2">
+                  <span className={`px-2.5 py-1 rounded text-xs font-bold flex items-center gap-1.5 border ${
+                    doc.stage === 'Won' ? 'bg-emerald-950/80 text-emerald-300 border-emerald-500/50' :
+                    doc.stage === 'Lost' ? 'bg-rose-950/80 text-rose-300 border-rose-500/50' :
+                    'bg-blue-950/80 text-blue-300 border-blue-500/50'
+                  }`}>
+                    <Briefcase className="w-3.5 h-3.5" />
+                    <span>{doc.stage}</span>
+                  </span>
+                  {doc.stage === 'Won' && (
+                    <span className="text-[10px] text-emerald-400 font-bold">Closed Won 🏆</span>
+                  )}
+                </div>
+              </div>
+
+              {/* Deal Value */}
+              <div className="space-y-1">
+                <label className="text-[11px] font-medium text-slate-400">Deal Contract Value</label>
+                <div className="w-full bg-slate-950 border border-slate-800 rounded px-2.5 py-1.5 text-xs font-bold text-emerald-400">
+                  ${Number(doc.deal_value || 0).toLocaleString()} {doc.currency || 'USD'}
+                </div>
+              </div>
+
+              {/* Probability Meter */}
+              {doc.probability !== undefined && (
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="font-medium text-slate-400">Win Probability</span>
+                    <span className="font-bold text-emerald-400">{doc.probability}%</span>
+                  </div>
+                  <div className="w-full bg-slate-950 border border-slate-800 rounded-full h-2 overflow-hidden">
+                    <div 
+                      className="h-full bg-gradient-to-r from-blue-500 to-emerald-500 transition-all duration-500"
+                      style={{ width: `${Math.min(100, Math.max(0, doc.probability))}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Manager Approval Status */}
+              <div className="space-y-1">
+                <label className="text-[11px] font-medium text-slate-400">Manager Sign-off</label>
+                <div className="flex items-center gap-2">
+                  <span className={`px-2 py-1 rounded text-xs font-semibold flex items-center gap-1 border ${
+                    doc.manager_approved 
+                      ? 'bg-emerald-950/60 text-emerald-300 border-emerald-500/40' 
+                      : 'bg-amber-950/60 text-amber-300 border-amber-500/40'
+                  }`}>
+                    <CheckSquare className="w-3 h-3" />
+                    <span>{doc.manager_approved ? 'Executive Approved' : 'Pending Approval'}</span>
+                  </span>
+                </div>
+              </div>
+
+              {/* Billing Webhook Status */}
+              {doc.billing_status && (
+                <div className="space-y-1">
+                  <label className="text-[11px] font-medium text-slate-400">Billing Sync</label>
+                  <div className="w-full bg-slate-950 border border-purple-500/40 rounded px-2.5 py-1.5 text-xs font-bold text-purple-300">
+                    {doc.billing_status}
+                  </div>
+                </div>
+              )}
+
+              {/* Follow-up Task Status */}
+              {doc.follow_up_task_created !== undefined && (
+                <div className="space-y-1">
+                  <label className="text-[11px] font-medium text-slate-400">Onboarding ToDo Task</label>
+                  <span className={`inline-block px-2 py-1 rounded text-xs font-bold ${
+                    doc.follow_up_task_created ? 'bg-emerald-950 text-emerald-300 border border-emerald-500/40' : 'bg-slate-950 text-slate-500'
+                  }`}>
+                    {doc.follow_up_task_created ? '✓ Kick-off Task Generated' : 'Not generated'}
+                  </span>
+                </div>
+              )}
+            </>
           )}
         </div>
 

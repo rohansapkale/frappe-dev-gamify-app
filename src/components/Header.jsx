@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Sparkles, 
   Flame, 
@@ -15,9 +15,13 @@ import {
   User,
   LogOut,
   ChevronDown,
-  Target
+  Target,
+  Zap,
+  Bot,
+  Brain
 } from 'lucide-react';
 import { sounds } from '../utils/soundEffects';
+import { agentBrain } from '../utils/agentBrain';
 
 export default function Header({
   currentUser,
@@ -32,6 +36,14 @@ export default function Header({
 }) {
   const { xp, level, rank, coins, streak, completedQuests } = userStats;
   const [profileDropdown, setProfileDropdown] = useState(false);
+  const [agentIq, setAgentIq] = useState(() => agentBrain.getState()?.iq || 105);
+
+  useEffect(() => {
+    const unsub = agentBrain.subscribe(st => {
+      if (st?.iq) setAgentIq(st.iq);
+    });
+    return unsub;
+  }, []);
 
   const xpCurrentLevel = xp - (rank.minXp || 0);
   const nextRankMin = rank.nextMinXp || (rank.minXp + 400);
@@ -45,12 +57,15 @@ export default function Header({
 
   const navItems = [
     { id: 'quests', label: 'Quest Line & Drills', icon: Layers, count: completedQuests.length },
+    { id: 'agent', label: 'AI Mentor & IQ Journey', icon: Bot, isHighlight: true, badge: `${agentIq} IQ` },
     { id: 'quiz', label: 'Daily 10-MCQ Bug Hunt', icon: HelpCircle },
     { id: 'leaderboard', label: 'Global Leaderboard', icon: Trophy },
     { id: 'sandbox', label: 'Desk Sandbox', icon: Terminal },
     { id: 'docs', label: 'API Pulse & Docs', icon: BookOpen },
     { id: 'tree', label: 'Skill Tree RPG', icon: GitBranch },
   ];
+
+
 
   return (
     <header className="sticky top-0 z-40 bg-slate-950/90 backdrop-blur-md border-b border-slate-800/80 px-4 lg:px-8 py-3 transition-all">
@@ -133,6 +148,16 @@ export default function Header({
             <span className="text-xs font-bold text-yellow-400">{coins}</span>
           </div>
 
+          {/* Frappe Dev IQ */}
+          <button
+            onClick={() => { sounds.playClick(); setCurrentMode('agent'); }}
+            className="flex items-center gap-1.5 px-2.5 py-1 bg-blue-500/10 hover:bg-blue-500/20 text-blue-300 border border-blue-500/30 rounded-lg text-xs font-bold transition-all hover:scale-105"
+            title="Dr. Frappe Developer IQ Matrix & Career Journey"
+          >
+            <Brain className="w-3.5 h-3.5 text-blue-400" />
+            <span>{agentIq} IQ</span>
+          </button>
+
           {/* Trophy / Badges Button */}
           <button
             onClick={() => { sounds.playClick(); onOpenAchievements(); }}
@@ -179,6 +204,11 @@ export default function Header({
             >
               <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-blue-400' : 'text-slate-400'}`} />
               <span>{item.label}</span>
+              {item.badge && (
+                <span className="px-1.5 py-0.2 text-[10px] bg-blue-500/20 text-blue-300 border border-blue-500/30 rounded-full font-bold">
+                  {item.badge}
+                </span>
+              )}
               {item.count !== undefined && item.count > 0 && (
                 <span className="px-1.5 py-0.2 text-[10px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-full font-bold">
                   {item.count}

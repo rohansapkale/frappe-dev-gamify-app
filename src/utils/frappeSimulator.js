@@ -386,6 +386,45 @@ export class PythonSimulator {
       }
     }
 
+    // CRM Lead Qualification validation
+    if (docData.doctype === 'CRM Lead' && docData.status === 'Qualified') {
+      if (!docData.email_id || !docData.email_id.trim()) {
+        if (code.includes('throw') && (code.includes('email_id') || code.includes('Email'))) {
+          return { threw: true, message: "Email Address is mandatory to qualify a Lead" };
+        }
+      }
+      if (!docData.annual_revenue || Number(docData.annual_revenue) <= 0) {
+        if (code.includes('throw') && (code.includes('annual_revenue') || code.includes('Revenue') || code.includes('revenue'))) {
+          return { threw: true, message: "Annual Revenue must be greater than 0 to qualify a Lead" };
+        }
+      }
+      if (code.includes('sarah.na@company.com')) {
+        docData.territory_rep = 'sarah.na@company.com';
+      }
+      if (code.includes('today()') || code.includes('qualified_date')) {
+        docData.qualified_date = '2026-10-02';
+      }
+    }
+
+    // CRM Deal Enterprise Approval & Webhook validation
+    if (docData.doctype === 'CRM Deal' && docData.stage === 'Won') {
+      if (Number(docData.deal_value || 0) >= 100000) {
+        if (!docData.manager_approved) {
+          if (code.includes('throw') && (code.includes('manager_approved') || code.includes('Approval') || code.includes('approval') || code.includes('Manager'))) {
+            return { threw: true, message: "Enterprise deals exceeding $100,000 require Manager Approval before closing" };
+          }
+        }
+        if (!docData.tax_id || !docData.tax_id.trim()) {
+          if (code.includes('throw') && (code.includes('tax_id') || code.includes('Tax') || code.includes('tax'))) {
+            return { threw: true, message: "Tax ID / VAT Number is required for closed enterprise deals" };
+          }
+        }
+        if (code.includes('Pending Webhook Sync') || code.includes('billing_status')) {
+          docData.billing_status = 'Pending Webhook Sync';
+        }
+      }
+    }
+
     return { threw: false, message: 'Valid' };
   }
 
@@ -463,30 +502,407 @@ export class RestApiSimulator {
   }
 }
 
+// Master Workflow Automation Engine based on Frappe CRM Automations Architecture
+export class WorkflowAutomationSimulator {
+  constructor(context) {
+    this.context = context;
+    this.testRunResults = null;
+  }
+
+  interpolate(text, doc, runContext = {}) {
+    if (!text || typeof text !== 'string') return text;
+    return text.replace(/\{\{\s*([a-zA-Z0-9_\.]+)\s*\}\}/g, (match, path) => {
+      // support doc.field
+      if (path.startsWith('doc.')) {
+        const field = path.replace('doc.', '');
+        return doc[field] !== undefined ? doc[field] : '';
+      }
+      // support trigger.field
+      if (path.startsWith('trigger.')) {
+        const field = path.replace('trigger.', '');
+        return doc[field] !== undefined ? doc[field] : '';
+      }
+      // support context.steps.step_name.prop
+      if (path.startsWith('context.steps.')) {
+        const parts = path.split('.');
+        const stepName = parts[2];
+        const prop = parts[3];
+        return runContext.steps?.[stepName]?.[prop] !== undefined ? runContext.steps[stepName][prop] : '';
+      }
+      if (doc[path] !== undefined) return doc[path];
+      return match;
+    });
+  }
+
+  evaluateCondition(conditionStr, doc) {
+    if (!conditionStr) return true;
+    try {
+      // Clean up common Jinja / python syntax
+      const expr = conditionStr
+        .replace(/\band\b/g, '&&')
+        .replace(/\bor\b/g, '||')
+        .replace(/\bnot\b/g, '!');
+      const fn = new Function('doc', `return Boolean(${expr});`);
+      return fn(doc);
+    } catch (e) {
+      if (conditionStr.includes('doc.source == "Website"')) return doc.source === 'Website';
+      if (conditionStr.includes('doc.status == "New"')) return doc.status === 'New';
+      if (conditionStr.includes('doc.status == "Qualified"')) return doc.status === 'Qualified';
+      if (conditionStr.includes('doc.stage == "Won"')) return doc.stage === 'Won';
+      return true;
+    }
+  }
+
+  runTestRun(definition, initialDoc, options = { simulateEvent: false }) {
+    const ctx = this.context;
+    const workingDoc = JSON.parse(JSON.stringify(initialDoc || {}));
+    const originalDoc = JSON.parse(JSON.stringify(initialDoc || {}));
+    const stepResults = [];
+    const runContext = { steps: {}, event: {} };
+
+    ctx.log('info', `▶ [Test Run Started] Running automation '${definition.title || 'Automation'}' against ${definition.doctype} [${workingDoc.name || 'NEW'}]`);
+
+    // 1. Evaluate Filters
+    let passedFilters = true;
+    if (definition.condition) {
+      passedFilters = this.evaluateCondition(definition.condition, workingDoc);
+    } else if (definition.filters && Array.isArray(definition.filters)) {
+      for (const filter of definition.filters) {
+        const fieldVal = workingDoc[filter.field || filter.fieldname];
+        const targetVal = filter.value;
+        const op = filter.operator || '==';
+        if (op === '==' || op === 'Equals' || op === '=') {
+          if (fieldVal !== targetVal) passedFilters = false;
+        }
+      }
+    }
+
+    if (!passedFilters) {
+      ctx.log('warn', `[Filters] Document does not match automation filters. Run skipped.`);
+      return {
+        passed: false,
+        skipped: true,
+        reason: 'Filters did not match',
+        stepResults: []
+      };
+    } else {
+      ctx.log('success', `✔ [Filters Passed] Trigger conditions verified for ${workingDoc.name}`);
+    }
+
+    // Helper to execute steps recursively (for If/Else and Wait for Event branches)
+    const executeSteps = (stepsList, branchLabel = '') => {
+      if (!stepsList || !Array.isArray(stepsList)) return;
+
+      for (let i = 0; i < stepsList.length; i++) {
+        const step = stepsList[i];
+        const actionType = (step.action || '').toLowerCase();
+        const blockType = (step.block || '').toLowerCase();
+        const stepName = step.step_name || step.name || `step_${i + 1}`;
+
+        // ACTION: Email the Lead or Deal
+        if (actionType.includes('email')) {
+          const recipient = workingDoc.email_id || `${workingDoc.name.toLowerCase()}@example.com`;
+          const templateName = step.email_template || step.template || 'Default Template';
+          const subject = this.interpolate(step.subject || `Update on ${workingDoc.doctype}`, workingDoc, runContext);
+          ctx.log('success', `✉ [Action: Email the Lead or Deal] Prepared email via template '${templateName}' to <${recipient}> (Simulated in Test Run)`);
+          runContext.steps[stepName] = {
+            communication: { id: `COMM-${Date.now()}`, recipient, subject, template: templateName }
+          };
+          stepResults.push({
+            id: step.id || stepName,
+            name: stepName,
+            title: 'Email the Lead or Deal',
+            type: 'action',
+            status: 'Success',
+            details: `Simulated email to ${recipient} using '${templateName}'`
+          });
+        }
+
+        // ACTION: Notify in CRM
+        else if (actionType.includes('notify') || actionType === 'notify_in_crm') {
+          const recipient = step.recipients || 'Document owner';
+          const msg = this.interpolate(step.message || step.notification || 'New CRM Notification', workingDoc, runContext);
+          ctx.messages.push({ message: msg, title: 'CRM Notification Bell', indicator: 'blue' });
+          ctx.alerts.push({ message: msg, indicator: 'blue', duration: 6 });
+          ctx.log('success', `🔔 [Action: Notify in CRM] Notification added to CRM bell for [${recipient}]: "${msg}"`);
+          stepResults.push({
+            id: step.id || stepName,
+            name: stepName,
+            title: 'Notify in CRM',
+            type: 'action',
+            status: 'Success',
+            details: `Alerted ${recipient}: "${msg}"`
+          });
+        }
+
+        // ACTION: Adjust Lead Score
+        else if (actionType.includes('adjust') || actionType.includes('score')) {
+          const amount = Number(step.amount) || 0;
+          const old_value = Number(workingDoc.lead_score) || 0;
+          let new_value = old_value + amount;
+          if (step.min_score !== undefined) new_value = Math.max(step.min_score, new_value);
+          if (step.max_score !== undefined) new_value = Math.min(step.max_score, new_value);
+          workingDoc.lead_score = new_value;
+          runContext.steps[stepName] = { old_value, new_value, delta: amount };
+          ctx.log('success', `📈 [Action: Adjust Lead Score] Lead score updated from ${old_value} to ${new_value} (delta: ${amount >= 0 ? '+' : ''}${amount})`);
+          stepResults.push({
+            id: step.id || stepName,
+            name: stepName,
+            title: 'Adjust Lead Score',
+            type: 'action',
+            status: 'Success',
+            details: `Score: ${old_value} ➔ ${new_value} (${amount >= 0 ? '+' : ''}${amount})`
+          });
+        }
+
+        // ACTION: Set Lead Temperature
+        else if (actionType.includes('temperature')) {
+          const temp = step.temperature || 'Hot';
+          const old_temp = workingDoc.temperature || 'Warm';
+          workingDoc.temperature = temp;
+          runContext.steps[stepName] = { old_value: old_temp, new_value: temp };
+          ctx.log('success', `🌡️ [Action: Set Lead Temperature] Temperature marked as '${temp}'`);
+          stepResults.push({
+            id: step.id || stepName,
+            name: stepName,
+            title: 'Set Lead Temperature',
+            type: 'action',
+            status: 'Success',
+            details: `Temperature set to ${temp}`
+          });
+        }
+
+        // ACTION: Convert Lead to Deal
+        else if (actionType.includes('convert') || actionType.includes('deal')) {
+          workingDoc.status = 'Converted';
+          const dealDoc = {
+            doctype: 'CRM Deal',
+            name: `DEAL-${Date.now().toString().slice(-4)}`,
+            deal_name: `${workingDoc.lead_name || workingDoc.name} Deal`,
+            deal_owner: workingDoc.lead_owner,
+            organization: workingDoc.organization || workingDoc.lead_name,
+            probability: 20,
+            stage: 'Prospecting'
+          };
+          const resName = step.name_the_result || step.result_name || 'deal';
+          runContext.steps[resName] = dealDoc;
+          runContext.deal = dealDoc;
+          ctx.log('success', `💼 [Action: Convert Lead to Deal] Lead converted into new Deal [${dealDoc.name}]. Result saved as '${resName}'.`);
+          stepResults.push({
+            id: step.id || stepName,
+            name: stepName,
+            title: 'Convert Lead to Deal',
+            type: 'action',
+            status: 'Success',
+            details: `Created Deal ${dealDoc.name} for ${dealDoc.organization}`
+          });
+        }
+
+        // ACTION: Create Document (e.g. ToDo or CRM Task)
+        else if (actionType.includes('create document') || actionType.includes('create_document')) {
+          const targetDocType = step.document_type || step.doctype || 'ToDo';
+          const rawFields = step.field_values || step.fields || {};
+          const evaluatedFields = {};
+          Object.keys(rawFields).forEach(k => {
+            evaluatedFields[k] = this.interpolate(rawFields[k], workingDoc, runContext);
+          });
+          const createdDoc = {
+            doctype: targetDocType,
+            name: `${targetDocType.toUpperCase()}-${Date.now().toString().slice(-4)}`,
+            ...evaluatedFields
+          };
+          const resName = step.name_the_result || step.result_name || 'created_doc';
+          runContext.steps[resName] = createdDoc;
+          ctx.log('success', `📝 [Action: Create Document] Created ${targetDocType} [${createdDoc.name}]: "${createdDoc.title || createdDoc.name}"`);
+          stepResults.push({
+            id: step.id || stepName,
+            name: stepName,
+            title: `Create Document (${targetDocType})`,
+            type: 'action',
+            status: 'Success',
+            details: `Created ${targetDocType} linked to ${workingDoc.name}`
+          });
+        }
+
+        // ACTION: Assign to User
+        else if (actionType.includes('assign')) {
+          const assignee = step.assign_to || step.user || 'sales-rep@company.com';
+          workingDoc.assigned_to = assignee;
+          ctx.log('success', `👤 [Action: Assign to User] Assigned record to [${assignee}]`);
+          stepResults.push({
+            id: step.id || stepName,
+            name: stepName,
+            title: 'Assign to User',
+            type: 'action',
+            status: 'Success',
+            details: `Assigned to ${assignee}`
+          });
+        }
+
+        // ACTION: Call Webhook
+        else if (actionType.includes('webhook')) {
+          const url = this.interpolate(step.url || 'https://api.example.com/webhook', workingDoc, runContext);
+          const method = step.method || 'POST';
+          ctx.log('info', `🌐 [Action: Call Webhook] (Test Run Dry-Run) Would call ${method} ${url}. Request not sent during test run.`);
+          runContext.steps[stepName] = { status_code: 200, response: { ok: true, simulated: true } };
+          stepResults.push({
+            id: step.id || stepName,
+            name: stepName,
+            title: 'Call Webhook',
+            type: 'action',
+            status: 'Simulated',
+            details: `DRY RUN: ${method} ${url}`
+          });
+        }
+
+        // BLOCK: Wait
+        else if (blockType === 'wait') {
+          const duration = step.wait || step.duration || 1;
+          const unit = step.unit || 'Days';
+          ctx.log('info', `⏳ [Block: Wait] Pausing run for ${duration} ${unit} (Simulated in Test Run)`);
+          stepResults.push({
+            id: step.id || stepName,
+            name: stepName,
+            title: `Wait ${duration} ${unit}`,
+            type: 'block',
+            status: 'Simulated',
+            details: `Paused for ${duration} ${unit} (simulated)`
+          });
+        }
+
+        // BLOCK: If / Else
+        else if (blockType.includes('if') || blockType === 'if_else') {
+          const cond = step.condition || 'true';
+          const condResult = this.evaluateCondition(cond, workingDoc);
+          ctx.log('info', `🔀 [Block: If / Else] Condition '${cond}' evaluated to: ${condResult ? 'TRUE' : 'FALSE'}`);
+          stepResults.push({
+            id: step.id || stepName,
+            name: stepName,
+            title: `If / Else (${cond})`,
+            type: 'block',
+            status: 'Success',
+            details: `Branch taken: ${condResult ? 'True' : 'False'}`
+          });
+
+          if (condResult && (step.true_branch || step.steps_true)) {
+            executeSteps(step.true_branch || step.steps_true, 'True Branch');
+          } else if (!condResult && (step.false_branch || step.steps_false)) {
+            executeSteps(step.false_branch || step.steps_false, 'False Branch');
+          }
+        }
+
+        // BLOCK: Wait for event
+        else if (blockType.includes('event') || blockType === 'wait_for_event') {
+          const eventName = step.wait_for || 'The prospect replied';
+          const timeout = step.timeout || 3;
+          const unit = step.unit || 'Days';
+          const isEventHappened = Boolean(options.simulateEvent);
+
+          ctx.log('info', `⏱ [Block: Wait for event] Waiting for '${eventName}' (Timeout: ${timeout} ${unit})`);
+
+          if (isEventHappened) {
+            ctx.log('success', `⚡ [Wait for event] Event '${eventName}' happened! Following 'Event happened' branch.`);
+            stepResults.push({
+              id: step.id || stepName,
+              name: stepName,
+              title: `Wait for event (${eventName})`,
+              type: 'block',
+              status: 'Success',
+              details: `Branch: Event happened`
+            });
+            if (step.event_happened_branch || step.on_event) {
+              executeSteps(step.event_happened_branch || step.on_event, 'Event happened');
+            }
+          } else {
+            ctx.log('warn', `⌛ [Wait for event] (Test Run Default) Timed out after ${timeout} ${unit}. Following 'Timed out' branch.`);
+            stepResults.push({
+              id: step.id || stepName,
+              name: stepName,
+              title: `Wait for event (${eventName})`,
+              type: 'block',
+              status: 'Simulated',
+              details: `Branch: Timed out`
+            });
+            if (step.timed_out_branch || step.on_timeout) {
+              executeSteps(step.timed_out_branch || step.on_timeout, 'Timed out');
+            }
+          }
+        }
+      }
+    };
+
+    executeSteps(definition.steps);
+
+    // 4. Test Run Rollback
+    ctx.log('info', `🛡️ [Test Run Rollback] Test execution finished. All modifications to ${workingDoc.doctype} [${workingDoc.name}] rolled back to initial state.`);
+    ctx.log('success', `✨ Test run completed with 0 errors. No emails dispatched, no database rows committed.`);
+
+    this.testRunResults = {
+      automationTitle: definition.title,
+      workingDocState: workingDoc,
+      rolledBackDoc: originalDoc,
+      stepResults,
+      runContext
+    };
+
+    return this.testRunResults;
+  }
+}
+
 // Master execution and validation runner
 export function executeAndValidateQuest(quest, userCode) {
   const context = new VirtualFrappeContext(quest.testDoc);
   const frm = context.createVirtualFrm();
+  context.frm = frm;
   const frappe = context.createVirtualFrappe(frm);
   const _ = (str) => str;
   const locals = context.locals;
 
+  // Initialize Automation Simulator
+  context.automationSimulator = new WorkflowAutomationSimulator(context);
+
+  // Extend virtual frappe with CRM Automation helper
+  frappe.crm = {
+    automation: (def) => {
+      context.automationDefinition = def;
+      context.log('frappe', `frappe.crm.automation('${def.title || 'Workflow Automation'}') registered`);
+      return context.automationSimulator.runTestRun(def, quest.testDoc);
+    }
+  };
+
   try {
-    if (quest.language === 'javascript') {
-      const sandboxFn = new Function(
-        'frappe',
-        'frm',
-        '_',
-        'locals',
-        `
-        try {
-          ${userCode}
-        } catch(err) {
-          throw err;
+    if (quest.language === 'javascript' || quest.language === 'json' || quest.language === 'automation') {
+      let isJson = false;
+      let parsedJson = null;
+      try {
+        const trimmed = userCode.trim();
+        if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+          parsedJson = JSON.parse(trimmed);
+          isJson = true;
         }
-        `
-      );
-      sandboxFn(frappe, frm, _, locals);
+      } catch (e) {
+        isJson = false;
+      }
+
+      if (isJson && parsedJson) {
+        context.automationDefinition = parsedJson;
+        context.automationSimulator.runTestRun(parsedJson, quest.testDoc);
+      } else {
+        const sandboxFn = new Function(
+          'frappe',
+          'frm',
+          '_',
+          'locals',
+          `
+          try {
+            ${userCode}
+          } catch(err) {
+            throw err;
+          }
+          `
+        );
+        sandboxFn(frappe, frm, _, locals);
+      }
 
     } else if (quest.language === 'python') {
       context.pythonRunner = new PythonSimulator(userCode);
@@ -497,8 +913,6 @@ export function executeAndValidateQuest(quest, userCode) {
     }
 
     context.fetchSimulator = new RestApiSimulator(userCode);
-    context.triggerFieldChange = (field) => context.triggerFieldChange(field);
-    context.triggerChildEvent = (cdt, event, childDoctype, cdn) => context.triggerChildEvent(cdt, event, childDoctype, cdn);
 
     // Run Quest specific validation
     const validationResult = quest.validate(context.logs, context);
@@ -521,3 +935,4 @@ export function executeAndValidateQuest(quest, userCode) {
     };
   }
 }
+

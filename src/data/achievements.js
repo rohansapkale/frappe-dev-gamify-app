@@ -58,10 +58,25 @@ export const BADGES = [
     description: 'Maintain a 3+ day streak in Frappe learning missions.',
     icon: '🔥',
     category: 'Streak'
+  },
+  {
+    id: 'automation_architect',
+    name: 'Automation Architect',
+    description: 'Build and validate a Frappe CRM Workflow Automation with branching conditions and simulated rollback.',
+    icon: '⚡',
+    category: 'CRM Workflow'
+  },
+  {
+    id: 'lead_flow_master',
+    name: 'Flow Master',
+    description: 'Configure event-driven lead scoring and automated pipeline transitions in Frappe CRM.',
+    icon: '🔀',
+    category: 'CRM Workflow'
   }
 ];
 
 export const SKILL_TREE = [
+
   {
     id: 'node-client-basics',
     title: 'Client Scripting Basics',
@@ -103,6 +118,16 @@ export const SKILL_TREE = [
     tags: ['Grids', 'Data']
   },
   {
+    id: 'node-crm-automations',
+    title: 'CRM Workflow Automations Architect',
+    description: 'Design visual event-driven flows with Triggers, Wait blocks, If/Else branching, Lead Scoring, and safe test-runs.',
+    icon: 'Zap',
+    tier: 3,
+    unlockedBy: 'node-dynamic-fields',
+    xpReward: 250,
+    tags: ['CRM', 'Automations', 'Workflow']
+  },
+  {
     id: 'node-server-controllers',
     title: 'DocType Controllers & Hooks',
     description: 'Python Document class, validate, before_save, on_submit, and error handling.',
@@ -112,6 +137,7 @@ export const SKILL_TREE = [
     xpReward: 200,
     tags: ['Python', 'Controllers']
   },
+
   {
     id: 'node-db-queries',
     title: 'High Performance Database API',

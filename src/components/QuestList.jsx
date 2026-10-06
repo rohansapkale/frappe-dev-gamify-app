@@ -17,7 +17,8 @@ import {
   ChevronRight,
   Filter,
   Flame,
-  Award
+  Award,
+  Zap
 } from 'lucide-react';
 import { sounds } from '../utils/soundEffects';
 
@@ -28,7 +29,9 @@ const TRACK_ICONS = {
   'erpnext-scenarios': Briefcase,
   'api-integrations': Cpu,
   'reports-jinja': FileText,
+  'crm-automations': Zap,
 };
+
 
 export default function QuestList({ completedQuests = [], onSelectQuest }) {
   const [selectedTrack, setSelectedTrack] = useState('all');

@@ -9,12 +9,15 @@ import SkillTreeMode from './components/SkillTreeMode';
 import AchievementsModal from './components/AchievementsModal';
 import LeaderboardMode from './components/LeaderboardMode';
 import AuthModal from './components/AuthModal';
+import AgentCompanion from './components/AgentCompanion';
+import AgentJourneyMode from './components/AgentJourneyMode';
 
 import { DEVELOPER_RANKS, BADGES } from './data/achievements';
 import { QUESTS } from './data/quests';
 import { authStorage } from './utils/authStorage';
 import { triggerConfetti, triggerLevelUpConfetti } from './utils/confettiHelper';
 import { sounds } from './utils/soundEffects';
+import { agentBrain } from './utils/agentBrain';
 
 export default function App() {
   // Active User session & persistent data
@@ -40,6 +43,13 @@ export default function App() {
 
   // Sandbox preloaded code (if navigated from Docs Cheatsheet)
   const [sandboxInitialCode, setSandboxInitialCode] = useState(null);
+
+  // Initialize Dr. Frappe AI brain when user session changes
+  useEffect(() => {
+    if (currentUser) {
+      agentBrain.init(currentUser);
+    }
+  }, [currentUser?.id]);
 
   // Sync state when active user changes
   const syncWithUser = (user) => {
@@ -125,9 +135,13 @@ export default function App() {
     if (streak >= 3 && !toUnlock.includes('streak_flame')) {
       toUnlock.push('streak_flame');
     }
+    if (newCompleted.some(id => id.startsWith('crm-auto-')) && !toUnlock.includes('automation_architect')) {
+      toUnlock.push('automation_architect');
+    }
 
     setUnlockedBadges(toUnlock);
   };
+
 
   const handleCompleteQuest = (quest) => {
     const isFirstTime = !completedQuests.includes(quest.id);
@@ -239,7 +253,9 @@ export default function App() {
         )}
 
         {/* Mode 2: Daily 10-MCQ Bug Hunt */}
+
         {currentMode === 'quiz' && (
+
           <DailyQuizMode
             currentUser={currentUser}
             onDailyQuizComplete={handleDailyQuizComplete}
@@ -276,6 +292,17 @@ export default function App() {
             unlockedSkills={unlockedSkills}
             userXp={xp}
             onUnlockSkill={handleUnlockSkillNode}
+          />
+        )}
+
+        {/* Mode 7: Dr. Frappe AI Mentor & IQ Journey */}
+        {currentMode === 'agent' && (
+          <AgentJourneyMode
+            currentUser={currentUser}
+            onSelectQuest={(quest) => {
+              setActiveQuest(quest);
+              setCurrentMode('quests');
+            }}
           />
         )}
       </main>
@@ -328,6 +355,15 @@ export default function App() {
       <footer className="border-t border-slate-900 py-4 px-6 text-center text-xs text-slate-500">
         <p>FrappeQuest: The ERPNext Developer RPG • Built for Frappe & ERPNext Developers</p>
       </footer>
+
+      {/* 7. Floating Dr. Frappe AI Companion & Real-Time Observer */}
+      <AgentCompanion
+        currentQuest={activeQuest}
+        onSelectQuest={(quest) => {
+          setActiveQuest(quest);
+          setCurrentMode('quests');
+        }}
+      />
     </div>
   );
 }

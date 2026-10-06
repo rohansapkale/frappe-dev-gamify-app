@@ -410,8 +410,107 @@ export const MASTER_QUESTION_POOL = [
     ],
     correctIndex: 0,
     explanation: 'In `hooks.py`, `permission_query_conditions` attaches a Python function that returns an SQL WHERE clause fragment (e.g. `\`tabCustomer\`.territory IN ("North America")`), applying row-level filtering at the SQL level.'
+  },
+
+  // SECTION 7: Frappe CRM Workflow Automations (From official docs)
+  {
+    id: 'mcq-51-crm-auto-role',
+    category: 'Frappe CRM Automations',
+    difficulty: 'Easy',
+    xp: 60,
+    coins: 25,
+    question: 'Technical Interview: According to Frappe CRM documentation, which user role is required to create, edit, enable or test Workflow Automations in Settings?',
+    options: [
+      'CRM User',
+      'System Manager',
+      'Sales Master',
+      'Script Manager'
+    ],
+    correctIndex: 1,
+    explanation: 'As stated in official Frappe CRM docs, you need the System Manager role to create, edit, enable, or test Workflow Automations under Settings > Automation & Rules > Workflow Automations.'
+  },
+  {
+    id: 'mcq-52-crm-auto-testrun-webhook',
+    category: 'Frappe CRM Automations',
+    difficulty: 'Medium',
+    xp: 85,
+    coins: 35,
+    question: 'Technical Interview: In Frappe CRM Automations, how does a "Test Run" handle a "Call Webhook" action step?',
+    options: [
+      'It sends the real HTTP request to the external webhook URL',
+      'It reports what request it would have made, but does not actually send it',
+      'It throws an error because webhooks cannot be tested',
+      'It replaces the URL with localhost:8000'
+    ],
+    correctIndex: 1,
+    explanation: 'In Frappe CRM test runs, all changes are rolled back, and Call Webhook reports the request it would have made without actually dispatching network HTTP traffic, guaranteeing zero external side-effects.'
+  },
+  {
+    id: 'mcq-53-crm-auto-consecutive-failures',
+    category: 'Frappe CRM Automations',
+    difficulty: 'Medium',
+    xp: 85,
+    coins: 35,
+    question: 'Technical Interview: What safety mechanism triggers if a Frappe CRM Workflow Automation fails 10 times consecutively in production?',
+    options: [
+      'The entire ERPNext site goes into maintenance mode',
+      'The automation is automatically disabled, the reason is displayed, and the owner is notified',
+      'The server restarts the Redis background queue',
+      'The database rolls back to yesterday\'s backup'
+    ],
+    correctIndex: 1,
+    explanation: 'If a Workflow Automation fails 10 times in a row, Frappe CRM automatically disables it, displays the failure reason on the automation, and notifies the owner to prevent cascade failures.'
+  },
+  {
+    id: 'mcq-54-crm-auto-jinja-steps',
+    category: 'Frappe CRM Automations',
+    difficulty: 'Hard',
+    xp: 110,
+    coins: 45,
+    question: 'Technical Interview: An earlier step named `score_reply` updated a lead\'s score. How do you reference its new value in a subsequent "Notify in CRM" message template?',
+    options: [
+      '{{ steps.score_reply.value }}',
+      '{{ context.steps.score_reply.new_value }}',
+      '{{ doc.previous_steps["score_reply"] }}',
+      '{{ frappe.get_step_result("score_reply") }}'
+    ],
+    correctIndex: 1,
+    explanation: 'In Frappe CRM, values produced by earlier named steps are accessible in templates via `context.steps.<step_name>.<property>`. For Adjust Lead Score, this includes `new_value`, `old_value`, and `delta`.'
+  },
+  {
+    id: 'mcq-55-crm-auto-wait-event-branch',
+    category: 'Frappe CRM Automations',
+    difficulty: 'Medium',
+    xp: 85,
+    coins: 35,
+    question: 'Technical Interview: When testing a Workflow Automation with a "Wait for event" block in Test Run mode, which branch does the simulator take by default?',
+    options: [
+      'The Event happened branch',
+      'The Timed out branch',
+      'It pauses the test run for 3 actual calendar days',
+      'It aborts with a TimeoutException'
+    ],
+    correctIndex: 1,
+    explanation: 'During a Test Run, Wait for event takes the Timed out branch by default. Users can click "Run Event happened" under the block to test the other branch.'
+  },
+  {
+    id: 'mcq-56-crm-auto-run-as-principle',
+    category: 'Frappe CRM Automations',
+    difficulty: 'Easy',
+    xp: 60,
+    coins: 25,
+    question: 'Technical Interview: What is the recommended security best practice when configuring the "Run As" setting for Frappe CRM Automations?',
+    options: [
+      'Always run every automation as Administrator for maximum privileges',
+      'Pick the least powerful user that can still accomplish the job (Least Privilege Principle)',
+      'Run As is ignored for background automations',
+      'Create a guest user account without any roles'
+    ],
+    correctIndex: 1,
+    explanation: 'The official Frappe CRM documentation recommends: "Pick the least powerful user that can still do the job. For example, an automation that only updates leads does not need Administrator."'
   }
 ];
+
 
 // Helper: Seeded pseudo-random selector based on Date string (YYYY-MM-DD)
 export function getDailyQuizSet(dateString) {

@@ -6,7 +6,9 @@
 
 ## 🌟 Key Features
 
-### 1. 🎯 5 Core Mastery Quest Tracks
+### 1. 🎯 Core Mastery Quest Tracks
+- **Track 0: Technical Interview Mastery**
+  - Dynamic link field filtering, GL balancing guards, and security validation.
 - **Track 1: Client Scripting & Desk UI Magic**
   - Custom Buttons & Dropdown Groups (`frm.add_custom_button('VIP Priority', fn, 'Actions')`)
   - Dynamic Field Rules (`frm.set_df_property`, `frm.toggle_reqd`, `frm.toggle_display`)
@@ -20,6 +22,14 @@
   - Resource filters, URL query formatting, and `frappe.enqueue`
 - **Track 5: Print Formats & Reports**
   - Jinja2 template engineering, `frappe.format_value` currency helpers, and conditional layout rendering
+- **Track 6: Frappe CRM Workflow Automations (New! ⚡)**
+  - Built from official docs (`docs.frappe.io/crm/automations/introduction`):
+  - Welcome new website leads with 2-day wait follow-ups
+  - Prospect reply detection with Wait for Event & Hot lead scoring
+  - Deal Won pipeline creating linked ToDos and triggering external billing webhooks
+  - Automated Lead-to-Deal conversion and territory sales rep routing
+  - Test Run sandboxing with verified zero-mutation rollback
+
 
 ---
 
@@ -30,7 +40,19 @@
 
 ---
 
-### 3. 🧪 Freeform Desk Sandbox
+### 3. ⚡ Visual Frappe CRM Workflow Automations Studio
+- **Interactive Canvas**: Visual nodes for Triggers, Filters, Wait Blocks, If/Else branching, and CRM Actions.
+- **Test Run Sandbox Simulation**: Experience Frappe CRM's dry-run engine:
+  - Step-by-step canvas execution indicators (Success, Simulated, Skipped)
+  - Simulated Wait intervals without delaying developers
+  - Event Arrived vs Timed Out branch toggles for `Wait for event` blocks
+  - Complete post-execution rollback guaranteeing zero database mutations and zero live webhook transmissions.
+- **Declarative Schema Inspector**: Real-time JSON/schema synchronization.
+
+---
+
+### 4. 🧪 Freeform Desk Sandbox
+
 - Experiment with any DocType (`Sales Order`, `Customer`, `Quotation`).
 - Load pre-configured templates (Custom Action Buttons, Dynamic Field Rules, Prompt Modals, Dashboard Headlines).
 - Write custom scripts and watch the virtual Frappe Desk react instantly.

@@ -49,7 +49,16 @@ export const TRACKS = [
     color: '#ec4899',
     gradient: 'from-pink-500/20 to-rose-500/20',
   },
+  {
+    id: 'crm-automations',
+    title: 'Frappe CRM Automations & Logic',
+    description: 'Master CRM automations: dynamic lead scoring, deal won task generators, 3-day inactivity follow-ups, qualification guards, and high-value approvals.',
+    icon: 'Zap',
+    color: '#06b6d4',
+    gradient: 'from-cyan-500/20 to-blue-500/20',
+  },
 ];
+
 
 export const QUESTS = [
   // TRACK 0: INTERVIEW MASTERY (Top-priority for technical interviews & problem solving)
@@ -1043,5 +1052,609 @@ Return the decoded \`data\` array from response JSON.`,
       }
       return { pass: true, message: "Flawless Jinja formatting! The print layout is elegant, dynamic, and compliant!" };
     }
+  },
+
+  // TRACK 6: FRAPPE CRM AUTOMATIONS & LOGIC (Interactive Developer Missions)
+  {
+    id: 'crm-01-lead-scoring-temperature',
+    trackId: 'crm-automations',
+    title: 'CRM Lead: Dynamic Lead Scoring & Temperature Pipeline',
+    level: 'Intermediate',
+    xp: 300,
+    coins: 120,
+    doctype: 'CRM Lead',
+    language: 'javascript',
+    summary: 'Build a dynamic lead scoring Client Script: bump score (+25) on prospect engagement, classify temperature (Hot/Warm/Cold), and unlock Fast-Track deal actions.',
+    briefing: `### 🎯 Sales Operations Mission:
+The VP of Sales asks: *"When a sales representative logs a prospect reply or engagement on a CRM Lead, we need real-time scoring and temperature classification without manual guesswork. If a lead turns 'Hot', immediately unlock a fast-track action to convert them into a Deal!"*
+
+Your Task on the **CRM Lead** Client Script:
+1. In the \`frappe.ui.form.on('CRM Lead', { ... })\` definition:
+2. In \`refresh(frm)\`:
+   - If \`frm.doc.lead_score >= 75\`:
+     - Add custom button: \`frm.add_custom_button('Fast-Track to Deal', () => { frappe.show_alert('Promoting lead to Sales Pipeline!', 5); })\`
+3. In \`prospect_replied(frm)\` (custom form event):
+   - Increment \`frm.doc.lead_score\` by \`25\`:
+     \`const new_score = (frm.doc.lead_score || 0) + 25;\`
+     \`frm.set_value('lead_score', new_score);\`
+   - Dynamically set \`temperature\`:
+     - If \`new_score >= 75\`: \`frm.set_value('temperature', 'Hot');\` and add the \`'Fast-Track to Deal'\` button.
+     - Else if \`new_score >= 35\`: \`frm.set_value('temperature', 'Warm');\`
+     - Else: \`frm.set_value('temperature', 'Cold');\`
+   - Show notification:
+     \`frappe.show_alert('Lead score updated! Current temperature: ' + (new_score >= 75 ? 'Hot' : 'Warm'), 5);\`
+`,
+    objectives: [
+      'Implement `refresh(frm)` to display `Fast-Track to Deal` when `lead_score >= 75`',
+      'Implement `prospect_replied(frm)` to bump `lead_score` by 25',
+      'Classify `temperature` into `Hot` (>=75), `Warm` (>=35), or `Cold` (<35)',
+      'Trigger `frappe.show_alert` with the new temperature status'
+    ],
+    docReference: {
+      title: 'Frappe CRM Form Events & Lead Scoring',
+      url: 'https://docs.frappe.io/crm/automations/introduction',
+      codeSnippet: `frappe.ui.form.on('CRM Lead', {
+    refresh(frm) {
+        if ((frm.doc.lead_score || 0) >= 75) {
+            frm.add_custom_button('Fast-Track to Deal', () => {
+                frappe.show_alert('Promoting lead to Sales Pipeline!', 5);
+            });
+        }
+    },
+    prospect_replied(frm) {
+        const new_score = (frm.doc.lead_score || 0) + 25;
+        frm.set_value('lead_score', new_score);
+        if (new_score >= 75) {
+            frm.set_value('temperature', 'Hot');
+            frm.add_custom_button('Fast-Track to Deal', () => {
+                frappe.show_alert('Promoting lead to Sales Pipeline!', 5);
+            });
+        } else if (new_score >= 35) {
+            frm.set_value('temperature', 'Warm');
+        } else {
+            frm.set_value('temperature', 'Cold');
+        }
+        frappe.show_alert('Lead score updated! Current temperature: ' + (new_score >= 75 ? 'Hot' : 'Warm'), 5);
+    }
+});`
+    },
+    starterCode: `frappe.ui.form.on('CRM Lead', {
+    refresh(frm) {
+        // TODO: If lead_score >= 75, add custom button 'Fast-Track to Deal'
+        
+    },
+
+    prospect_replied(frm) {
+        // TODO: Increment lead_score by 25 and dynamically set temperature ('Hot', 'Warm', 'Cold')
+        // Show frappe.show_alert with current temperature
+        
+    }
+});`,
+    solutionCode: `frappe.ui.form.on('CRM Lead', {
+    refresh(frm) {
+        if ((frm.doc.lead_score || 0) >= 75) {
+            frm.add_custom_button('Fast-Track to Deal', () => {
+                frappe.show_alert('Promoting lead to Sales Pipeline!', 5);
+            });
+        }
+    },
+
+    prospect_replied(frm) {
+        const new_score = (frm.doc.lead_score || 0) + 25;
+        frm.set_value('lead_score', new_score);
+
+        if (new_score >= 75) {
+            frm.set_value('temperature', 'Hot');
+            frm.add_custom_button('Fast-Track to Deal', () => {
+                frappe.show_alert('Promoting lead to Sales Pipeline!', 5);
+            });
+        } else if (new_score >= 35) {
+            frm.set_value('temperature', 'Warm');
+        } else {
+            frm.set_value('temperature', 'Cold');
+        }
+
+        frappe.show_alert('Lead score updated! Current temperature: ' + (new_score >= 75 ? 'Hot' : 'Warm'), 5);
+    }
+});`,
+    testDoc: {
+      doctype: 'CRM Lead',
+      name: 'LEAD-2026-0088',
+      lead_name: 'Devin Thorne',
+      company_name: 'Acme Innovations',
+      email_id: 'devin@acmecorp.com',
+      lead_score: 55,
+      temperature: 'Warm',
+      status: 'Open'
+    },
+    validate: (logs, context) => {
+      const { frm, alerts, registeredHandlers } = context;
+      const leadHandlers = registeredHandlers && registeredHandlers['CRM Lead'];
+      if (!leadHandlers) {
+        return { pass: false, error: "frappe.ui.form.on('CRM Lead', ...) was not registered." };
+      }
+      if (!leadHandlers.prospect_replied) {
+        return { pass: false, error: "Missing 'prospect_replied(frm)' event handler." };
+      }
+      leadHandlers.prospect_replied(frm);
+      if (frm.doc.lead_score !== 80) {
+        return { pass: false, error: "prospect_replied must increment lead_score by 25 (expected 55 + 25 = 80, got " + frm.doc.lead_score + ")." };
+      }
+      if (frm.doc.temperature !== 'Hot') {
+        return { pass: false, error: "Lead temperature should update to 'Hot' when lead_score >= 75 (got '" + frm.doc.temperature + "')." };
+      }
+      const hasButton = (context.buttons || []).some(b => b.label === 'Fast-Track to Deal');
+      if (!hasButton) {
+        return { pass: false, error: "Custom button 'Fast-Track to Deal' was not added when lead reached Hot temperature." };
+      }
+      const hasAlert = alerts.some(a => (a.message || '').includes('temperature') || (a.message || '').includes('Hot') || (a.message || '').includes('score'));
+      if (!hasAlert) {
+        return { pass: false, error: "frappe.show_alert was not triggered on prospect reply." };
+      }
+      return { pass: true, message: "Outstanding! You constructed a responsive Frappe CRM lead qualification and dynamic temperature pipeline!" };
+    }
+  },
+
+  {
+    id: 'crm-02-deal-won-todo-generator',
+    trackId: 'crm-automations',
+    title: 'CRM Deal: Deal Won Kick-off Task & Probability Sync',
+    level: 'Intermediate',
+    xp: 320,
+    coins: 130,
+    doctype: 'CRM Deal',
+    language: 'javascript',
+    summary: 'Automate post-sales handoff: when a CRM Deal is marked Won, guarantee 100% win probability, show celebratory alerts, and inject a kick-off task generator.',
+    briefing: `### 🎯 Sales Operations Mission:
+Closing an enterprise contract is a major milestone! The Head of Customer Success insists:
+*"Whenever a deal stage moves to 'Won', we must automatically synchronize win probability to 100%, render a 'Create Kick-off ToDo' button under the 'Actions' menu, and notify the deal owner to prepare customer onboarding."*
+
+Your Task on the **CRM Deal** Client Script:
+1. In \`frappe.ui.form.on('CRM Deal', { ... })\`:
+2. In \`refresh(frm)\`:
+   - If \`frm.doc.stage === 'Won'\`:
+     - Set probability: \`frm.set_value('probability', 100);\`
+     - Add a custom button inside the \`'Actions'\` dropdown group:
+       \`frm.add_custom_button('Create Kick-off ToDo', () => {\`
+       \`    frm.set_value('follow_up_task_created', 1);\`
+       \`    frappe.show_alert('Kick-off ToDo created for ' + frm.doc.deal_owner, 5);\`
+       \`}, 'Actions');\`
+3. In \`stage(frm)\` (field change event):
+   - If \`frm.doc.stage === 'Won'\`:
+     - Set \`probability\` to \`100\`: \`frm.set_value('probability', 100);\`
+     - Trigger celebratory alert: \`frappe.show_alert('🎉 Deal Won! Kick-off tasks unlocked.', 5);\`
+     - Add the custom button \`'Create Kick-off ToDo'\` under \`'Actions'\`.
+`,
+    objectives: [
+      'In `refresh(frm)` and `stage(frm)`, check if `frm.doc.stage === "Won"`',
+      'Sync `probability` to `100` upon deal close',
+      'Add custom button `Create Kick-off ToDo` under the `Actions` group',
+      'In button callback, update `follow_up_task_created = 1` and show alert'
+    ],
+    docReference: {
+      title: 'Frappe CRM Deal Automations & ToDo Creation',
+      url: 'https://docs.frappe.io/crm/automations/actions#create-document',
+      codeSnippet: `frappe.ui.form.on('CRM Deal', {
+    refresh(frm) {
+        if (frm.doc.stage === 'Won') {
+            frm.set_value('probability', 100);
+            frm.add_custom_button('Create Kick-off ToDo', () => {
+                frm.set_value('follow_up_task_created', 1);
+                frappe.show_alert('Kick-off ToDo created for ' + frm.doc.deal_owner, 5);
+            }, 'Actions');
+        }
+    },
+    stage(frm) {
+        if (frm.doc.stage === 'Won') {
+            frm.set_value('probability', 100);
+            frappe.show_alert('🎉 Deal Won! Kick-off tasks unlocked.', 5);
+            frm.add_custom_button('Create Kick-off ToDo', () => {
+                frm.set_value('follow_up_task_created', 1);
+                frappe.show_alert('Kick-off ToDo created for ' + frm.doc.deal_owner, 5);
+            }, 'Actions');
+        }
+    }
+});`
+    },
+    starterCode: `frappe.ui.form.on('CRM Deal', {
+    refresh(frm) {
+        // TODO: If stage is 'Won', set probability = 100 and add 'Create Kick-off ToDo' under 'Actions'
+        
+    },
+
+    stage(frm) {
+        // TODO: When stage changes to 'Won', sync probability to 100 and unlock kick-off task action
+        
+    }
+});`,
+    solutionCode: `frappe.ui.form.on('CRM Deal', {
+    refresh(frm) {
+        if (frm.doc.stage === 'Won') {
+            frm.set_value('probability', 100);
+            frm.add_custom_button('Create Kick-off ToDo', () => {
+                frm.set_value('follow_up_task_created', 1);
+                frappe.show_alert('Kick-off ToDo created for ' + frm.doc.deal_owner, 5);
+            }, 'Actions');
+        }
+    },
+
+    stage(frm) {
+        if (frm.doc.stage === 'Won') {
+            frm.set_value('probability', 100);
+            frappe.show_alert('🎉 Deal Won! Kick-off tasks unlocked.', 5);
+            frm.add_custom_button('Create Kick-off ToDo', () => {
+                frm.set_value('follow_up_task_created', 1);
+                frappe.show_alert('Kick-off ToDo created for ' + frm.doc.deal_owner, 5);
+            }, 'Actions');
+        }
+    }
+});`,
+    testDoc: {
+      doctype: 'CRM Deal',
+      name: 'DEAL-2026-0091',
+      deal_name: 'HyperScale Enterprise Contract',
+      organization: 'HyperScale Inc',
+      deal_owner: 'rahul@company.com',
+      stage: 'Proposal',
+      deal_value: 150000,
+      probability: 60,
+      currency: 'USD'
+    },
+    validate: (logs, context) => {
+      const { frm, alerts, registeredHandlers } = context;
+      const dealHandlers = registeredHandlers && registeredHandlers['CRM Deal'];
+      if (!dealHandlers) {
+        return { pass: false, error: "frappe.ui.form.on('CRM Deal', ...) was not registered." };
+      }
+      frm.doc.stage = 'Won';
+      if (dealHandlers.stage) {
+        dealHandlers.stage(frm);
+      } else if (dealHandlers.refresh) {
+        dealHandlers.refresh(frm);
+      }
+      if (frm.doc.probability !== 100) {
+        return { pass: false, error: "Deal probability must be set to 100 when stage is 'Won'." };
+      }
+      const hasButton = (context.buttons || []).some(b => b.label === 'Create Kick-off ToDo' && b.group === 'Actions');
+      if (!hasButton) {
+        return { pass: false, error: "Custom button 'Create Kick-off ToDo' was not added under the 'Actions' menu group." };
+      }
+      const btn = (context.buttons || []).find(b => b.label === 'Create Kick-off ToDo');
+      if (btn && btn.callback) {
+        btn.callback();
+        if (!frm.doc.follow_up_task_created) {
+          return { pass: false, error: "Button callback must set follow_up_task_created to 1." };
+        }
+      }
+      return { pass: true, message: "Superb! You automated post-sales onboarding task generation and probability syncing for closed deals!" };
+    }
+  },
+
+  {
+    id: 'crm-03-inactive-lead-nudge',
+    trackId: 'crm-automations',
+    title: 'CRM Lead: 3-Day Inactivity SLA Nudge & Follow-up Action',
+    level: 'Intermediate',
+    xp: 310,
+    coins: 120,
+    doctype: 'CRM Lead',
+    language: 'javascript',
+    summary: 'Enforce CRM SLA standards: detect uncontacted leads older than 3 days, display high-priority Desk alerts, and provide a 1-click follow-up dispatch button.',
+    briefing: `### 🎯 Sales Operations Mission:
+Inbound leads turn cold quickly! Sales management enforces a 72-hour contact rule on Desk:
+*"If a lead's status is 'New' and days_since_contact is 3 or more, immediately flag it on the Desk form with a high-priority warning alert, and add a 'Send 3-Day Nudge Email' action button inside the 'Follow-up' menu to dispatch the email and update status to 'Follow-up Sent'."*
+
+Your Task on the **CRM Lead** Client Script:
+1. In \`frappe.ui.form.on('CRM Lead', { ... })\`:
+2. In \`refresh(frm)\`:
+   - Check if \`frm.doc.status === 'New'\` AND \`(frm.doc.days_since_contact || 0) >= 3\`:
+     - Display a warning alert:
+       \`frappe.show_alert('⚠️ Lead inactive for 3+ days! Immediate follow-up required.', 7);\`
+     - Add custom button inside \`'Follow-up'\` group:
+       \`frm.add_custom_button('Send 3-Day Nudge Email', () => {\`
+       \`    frm.set_value('status', 'Follow-up Sent');\`
+       \`    frappe.show_alert('3-Day Nudge Email dispatched to ' + frm.doc.email_id, 5);\`
+       \`}, 'Follow-up');\`
+`,
+    objectives: [
+      'In `refresh(frm)`, detect when `status === "New"` and `days_since_contact >= 3`',
+      'Display warning alert with `frappe.show_alert`',
+      'Add custom button `Send 3-Day Nudge Email` under `Follow-up` menu',
+      'In callback, set `status = "Follow-up Sent"` and confirm dispatch'
+    ],
+    docReference: {
+      title: 'Frappe CRM Inactivity & Wait Automations',
+      url: 'https://docs.frappe.io/crm/automations/blocks#wait',
+      codeSnippet: `frappe.ui.form.on('CRM Lead', {
+    refresh(frm) {
+        if (frm.doc.status === 'New' && (frm.doc.days_since_contact || 0) >= 3) {
+            frappe.show_alert('⚠️ Lead inactive for 3+ days! Immediate follow-up required.', 7);
+            frm.add_custom_button('Send 3-Day Nudge Email', () => {
+                frm.set_value('status', 'Follow-up Sent');
+                frappe.show_alert('3-Day Nudge Email dispatched to ' + frm.doc.email_id, 5);
+            }, 'Follow-up');
+        }
+    }
+});`
+    },
+    starterCode: `frappe.ui.form.on('CRM Lead', {
+    refresh(frm) {
+        // TODO: Check if status == 'New' and days_since_contact >= 3
+        // Show warning alert and add 'Send 3-Day Nudge Email' under 'Follow-up' group
+        
+    }
+});`,
+    solutionCode: `frappe.ui.form.on('CRM Lead', {
+    refresh(frm) {
+        if (frm.doc.status === 'New' && (frm.doc.days_since_contact || 0) >= 3) {
+            frappe.show_alert('⚠️ Lead inactive for 3+ days! Immediate follow-up required.', 7);
+            
+            frm.add_custom_button('Send 3-Day Nudge Email', () => {
+                frm.set_value('status', 'Follow-up Sent');
+                frappe.show_alert('3-Day Nudge Email dispatched to ' + frm.doc.email_id, 5);
+            }, 'Follow-up');
+        }
+    }
+});`,
+    testDoc: {
+      doctype: 'CRM Lead',
+      name: 'LEAD-2026-0042',
+      lead_name: 'Priya Sharma',
+      company_name: 'TechCorp Solutions',
+      email_id: 'priya@techcorp.io',
+      status: 'New',
+      days_since_contact: 4,
+      lead_owner: 'rahul@company.com'
+    },
+    validate: (logs, context) => {
+      const { frm, alerts, registeredHandlers } = context;
+      const leadHandlers = registeredHandlers && registeredHandlers['CRM Lead'];
+      if (!leadHandlers || !leadHandlers.refresh) {
+        return { pass: false, error: "Missing refresh(frm) handler on 'CRM Lead'." };
+      }
+      const hasAlert = alerts.some(a => (a.message || '').includes('inactive') || (a.message || '').includes('3+'));
+      if (!hasAlert) {
+        return { pass: false, error: "frappe.show_alert was not called with the inactivity warning." };
+      }
+      const hasButton = (context.buttons || []).some(b => b.label === 'Send 3-Day Nudge Email' && b.group === 'Follow-up');
+      if (!hasButton) {
+        return { pass: false, error: "Custom button 'Send 3-Day Nudge Email' must be added inside the 'Follow-up' menu." };
+      }
+      const btn = (context.buttons || []).find(b => b.label === 'Send 3-Day Nudge Email');
+      if (btn && btn.callback) {
+        btn.callback();
+        if (frm.doc.status !== 'Follow-up Sent') {
+          return { pass: false, error: "Clicking the button must update lead status to 'Follow-up Sent'." };
+        }
+      }
+      return { pass: true, message: "A+! You created an automated SLA inactivity detector and one-click follow-up dispatch button!" };
+    }
+  },
+
+  {
+    id: 'crm-04-lead-qualification-guard',
+    trackId: 'crm-automations',
+    title: 'CRM Lead Controller: Qualification Integrity Guard & Territory Routing',
+    level: 'Advanced',
+    xp: 350,
+    coins: 140,
+    doctype: 'CRM Lead',
+    language: 'python',
+    summary: 'Write a robust Python validate() controller hook: guard against qualifying leads without valid email and revenue, auto-assign territory sales reps, and record qualification timestamps.',
+    briefing: `### 🎯 Backend Engineering Mission:
+To prevent unqualified or spam leads from polluting CRM pipeline analytics, the sales director mandates a strict server-side gatekeeper in \`crm_lead.py\`:
+*"No lead can transition to 'Qualified' unless a valid email address is present and annual revenue is strictly positive. If valid, automatically assign territory lead owner 'sarah.na@company.com' and record today's qualification date."*
+
+Your Task in \`crm_lead.py\`:
+1. In the \`CRMLead(Document)\` class, implement \`def validate(self):\`.
+2. If \`self.status == "Qualified"\`:
+   - If not \`self.email_id\` or not \`self.email_id.strip()\`:
+     \`frappe.throw(_("Email Address is mandatory to qualify a Lead"))\`
+   - If not \`self.annual_revenue\` or \`float(self.annual_revenue) <= 0\`:
+     \`frappe.throw(_("Annual Revenue must be greater than 0 to qualify a Lead"))\`
+   - If validations pass:
+     \`self.territory_rep = "sarah.na@company.com"\`
+     \`self.qualified_date = frappe.utils.today()\`
+`,
+    objectives: [
+      'Define `def validate(self):` in `CRMLead(Document)`',
+      'Throw validation error if `email_id` is missing when `status == "Qualified"`',
+      'Throw validation error if `annual_revenue` is not greater than 0 when `status == "Qualified"`',
+      'Assign `territory_rep = "sarah.na@company.com"` and `qualified_date = frappe.utils.today()` on valid qualification'
+    ],
+    docReference: {
+      title: 'Frappe CRM Document Controllers & Validation Hooks',
+      url: 'https://docs.frappe.io/crm/automations/introduction',
+      codeSnippet: `import frappe
+from frappe import _
+from frappe.model.document import Document
+
+class CRMLead(Document):
+    def validate(self):
+        if self.status == "Qualified":
+            if not self.email_id or not self.email_id.strip():
+                frappe.throw(_("Email Address is mandatory to qualify a Lead"))
+            
+            if not self.annual_revenue or float(self.annual_revenue) <= 0:
+                frappe.throw(_("Annual Revenue must be greater than 0 to qualify a Lead"))
+            
+            self.territory_rep = "sarah.na@company.com"
+            self.qualified_date = frappe.utils.today()`
+    },
+    starterCode: `import frappe
+from frappe import _
+from frappe.model.document import Document
+
+class CRMLead(Document):
+    def validate(self):
+        # TODO: Enforce data integrity when self.status == 'Qualified'
+        # 1. Require valid self.email_id
+        # 2. Require self.annual_revenue > 0
+        # 3. Assign self.territory_rep = 'sarah.na@company.com' and self.qualified_date = frappe.utils.today()
+        pass`,
+    solutionCode: `import frappe
+from frappe import _
+from frappe.model.document import Document
+
+class CRMLead(Document):
+    def validate(self):
+        if self.status == "Qualified":
+            if not self.email_id or not self.email_id.strip():
+                frappe.throw(_("Email Address is mandatory to qualify a Lead"))
+            
+            if not self.annual_revenue or float(self.annual_revenue) <= 0:
+                frappe.throw(_("Annual Revenue must be greater than 0 to qualify a Lead"))
+            
+            self.territory_rep = "sarah.na@company.com"
+            self.qualified_date = frappe.utils.today()`,
+    testDoc: {
+      doctype: 'CRM Lead',
+      name: 'LEAD-2026-0105',
+      lead_name: 'Global Logistics Hub',
+      email_id: 'contact@globallogistics.com',
+      annual_revenue: 2500000,
+      status: 'Qualified',
+      lead_owner: 'rahul@company.com'
+    },
+    validate: (logs, context) => {
+      const runner = context.pythonRunner;
+      if (!runner) {
+        return { pass: false, error: "Python simulator did not initialize." };
+      }
+      const invalidEmailDoc = { doctype: 'CRM Lead', status: 'Qualified', email_id: '', annual_revenue: 500000 };
+      const res1 = runner.runValidation(invalidEmailDoc);
+      if (!res1.threw) {
+        return { pass: false, error: "frappe.throw was not called when email_id is missing on a Qualified lead." };
+      }
+      const invalidRevDoc = { doctype: 'CRM Lead', status: 'Qualified', email_id: 'test@corp.com', annual_revenue: 0 };
+      const res2 = runner.runValidation(invalidRevDoc);
+      if (!res2.threw) {
+        return { pass: false, error: "frappe.throw was not called when annual_revenue is <= 0 on a Qualified lead." };
+      }
+      const validDoc = { doctype: 'CRM Lead', status: 'Qualified', email_id: 'ceo@acme.com', annual_revenue: 1200000 };
+      runner.runValidation(validDoc);
+      if (validDoc.territory_rep !== 'sarah.na@company.com') {
+        return { pass: false, error: "self.territory_rep was not set to 'sarah.na@company.com'." };
+      }
+      if (!validDoc.qualified_date) {
+        return { pass: false, error: "self.qualified_date was not assigned with frappe.utils.today()." };
+      }
+      return { pass: true, message: "Masterful! You built an ironclad Python qualification validator with automatic territory lead routing!" };
+    }
+  },
+
+  {
+    id: 'crm-05-high-value-deal-guard',
+    trackId: 'crm-automations',
+    title: 'CRM Deal Controller: Enterprise Deal Approval & Billing Sync Guard',
+    level: 'Advanced',
+    xp: 380,
+    coins: 160,
+    doctype: 'CRM Deal',
+    language: 'python',
+    summary: 'Enforce enterprise sales governance: prevent deals >= $100k from closing won without manager sign-off and tax ID, then transition billing status for webhook sync.',
+    briefing: `### 🎯 Enterprise Architecture Mission:
+Large deals carry major financial compliance requirements. The CFO and Compliance Officer require an unbypassable DocType validation hook in \`crm_deal.py\`:
+*"Before any enterprise contract ($100,000 or greater) can be saved as 'Won', it must have verified Manager Approval and a valid Tax ID / VAT Number. When verified, immediately set billing_status to 'Pending Webhook Sync' so the ERP billing engine can pick it up."*
+
+Your Task in \`crm_deal.py\`:
+1. In the \`CRMDeal(Document)\` class, implement \`def validate(self):\`.
+2. If \`self.stage == "Won"\`:
+   - If \`float(self.deal_value or 0) >= 100000\`:
+     - If not \`self.manager_approved\`:
+       \`frappe.throw(_("Enterprise deals exceeding $100,000 require Manager Approval before closing"))\`
+     - If not \`self.tax_id\` or not \`self.tax_id.strip()\`:
+       \`frappe.throw(_("Tax ID / VAT Number is required for closed enterprise deals"))\`
+     - If requirements are fulfilled:
+       \`self.billing_status = "Pending Webhook Sync"\`
+`,
+    objectives: [
+      'Define `def validate(self):` in `CRMDeal(Document)`',
+      'Check if `stage == "Won"` and `deal_value >= 100000`',
+      'Throw validation error if `manager_approved` is not checked',
+      'Throw validation error if `tax_id` is missing',
+      'Set `billing_status = "Pending Webhook Sync"` when enterprise validations pass'
+    ],
+    docReference: {
+      title: 'Frappe CRM Deals & Webhook Synchronizations',
+      url: 'https://docs.frappe.io/crm/automations/actions#call-webhook',
+      codeSnippet: `import frappe
+from frappe import _
+from frappe.model.document import Document
+
+class CRMDeal(Document):
+    def validate(self):
+        if self.stage == "Won":
+            if float(self.deal_value or 0) >= 100000:
+                if not self.manager_approved:
+                    frappe.throw(_("Enterprise deals exceeding $100,000 require Manager Approval before closing"))
+                
+                if not self.tax_id or not self.tax_id.strip():
+                    frappe.throw(_("Tax ID / VAT Number is required for closed enterprise deals"))
+                
+                self.billing_status = "Pending Webhook Sync"`
+    },
+    starterCode: `import frappe
+from frappe import _
+from frappe.model.document import Document
+
+class CRMDeal(Document):
+    def validate(self):
+        # TODO: If self.stage == 'Won' and float(self.deal_value or 0) >= 100000:
+        # 1. Require self.manager_approved
+        # 2. Require valid self.tax_id
+        # 3. Set self.billing_status = 'Pending Webhook Sync'
+        pass`,
+    solutionCode: `import frappe
+from frappe import _
+from frappe.model.document import Document
+
+class CRMDeal(Document):
+    def validate(self):
+        if self.stage == "Won":
+            if float(self.deal_value or 0) >= 100000:
+                if not self.manager_approved:
+                    frappe.throw(_("Enterprise deals exceeding $100,000 require Manager Approval before closing"))
+                
+                if not self.tax_id or not self.tax_id.strip():
+                    frappe.throw(_("Tax ID / VAT Number is required for closed enterprise deals"))
+                
+                self.billing_status = "Pending Webhook Sync"`,
+    testDoc: {
+      doctype: 'CRM Deal',
+      name: 'DEAL-2026-0200',
+      deal_name: 'Apex Global Cloud Migration',
+      organization: 'Apex Global Corp',
+      stage: 'Won',
+      deal_value: 120000,
+      currency: 'USD',
+      deal_owner: 'rahul@company.com',
+      manager_approved: 1,
+      tax_id: 'US-TAX-998822',
+      billing_status: 'Draft'
+    },
+    validate: (logs, context) => {
+      const runner = context.pythonRunner;
+      if (!runner) {
+        return { pass: false, error: "Python simulator did not initialize." };
+      }
+      const unapprovedDeal = { doctype: 'CRM Deal', stage: 'Won', deal_value: 150000, manager_approved: 0, tax_id: 'US-TAX-1' };
+      const res1 = runner.runValidation(unapprovedDeal);
+      if (!res1.threw) {
+        return { pass: false, error: "frappe.throw was not called for an enterprise deal lacking manager approval." };
+      }
+      const noTaxDeal = { doctype: 'CRM Deal', stage: 'Won', deal_value: 120000, manager_approved: 1, tax_id: '' };
+      const res2 = runner.runValidation(noTaxDeal);
+      if (!res2.threw) {
+        return { pass: false, error: "frappe.throw was not called for an enterprise deal lacking a Tax ID." };
+      }
+      const validDeal = { doctype: 'CRM Deal', stage: 'Won', deal_value: 200000, manager_approved: 1, tax_id: 'GB-VAT-776' };
+      runner.runValidation(validDeal);
+      if (validDeal.billing_status !== 'Pending Webhook Sync') {
+        return { pass: false, error: "self.billing_status was not updated to 'Pending Webhook Sync'." };
+      }
+      return { pass: true, message: "Outstanding! You implemented mission-critical enterprise sales governance and automated billing sync triggers!" };
+    }
   }
 ];
+
