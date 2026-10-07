@@ -17,7 +17,10 @@ import {
   KeyRound,
   HelpCircle,
   ExternalLink,
-  Check
+  Check,
+  Eye,
+  EyeOff,
+  ArrowRight
 } from 'lucide-react';
 import { authStorage } from '../utils/authStorage';
 import { sounds } from '../utils/soundEffects';
@@ -47,6 +50,11 @@ export default function AuthModal({ currentUser, onLoginSuccess, onLogout, onClo
   const [specialization, setSpecialization] = useState(SPECIALIZATIONS[0]);
   const [avatar, setAvatar] = useState(AVATARS[0]);
   const [error, setError] = useState(null);
+
+  // Switch Account Credential Verification State
+  const [targetSwitchUser, setTargetSwitchUser] = useState(null);
+  const [switchPassword, setSwitchPassword] = useState('');
+  const [showSwitchPassword, setShowSwitchPassword] = useState(false);
 
   // Real Google OAuth 2.0 State
   const [googleClientId, setGoogleClientId] = useState(() => getGoogleClientId());
@@ -164,12 +172,37 @@ export default function AuthModal({ currentUser, onLoginSuccess, onLogout, onClo
     onClose();
   };
 
-  const handleQuickSwitch = (user) => {
+  const handleSelectUserToSwitch = (user) => {
     sounds.playClick();
-    const res = authStorage.login(user.username, user.password || '');
+    if (currentUser && user.id === currentUser.id) {
+      return;
+    }
+    setTargetSwitchUser(user);
+    setSwitchPassword('');
+    setError(null);
+  };
+
+  const handleConfirmSwitchWithPassword = (e) => {
+    e?.preventDefault();
+    setError(null);
+
+    if (!targetSwitchUser) return;
+
+    if (!switchPassword.trim()) {
+      sounds.playError();
+      setError('Password is required to switch to this account.');
+      return;
+    }
+
+    const res = authStorage.login(targetSwitchUser.username, switchPassword);
     if (res.success) {
+      sounds.playSuccess();
+      triggerConfetti();
       onLoginSuccess(res.user);
       onClose();
+    } else {
+      sounds.playError();
+      setError(res.message);
     }
   };
 
@@ -503,49 +536,129 @@ export default function AuthModal({ currentUser, onLoginSuccess, onLogout, onClo
           </form>
         )}
 
-        {/* Tab 3: Quick Profiles */}
+        {/* Tab 3: Switch Account with Proper Credential Verification */}
         {tab === 'switch' && (
-          <div className="space-y-2">
-            <span className={`text-[11px] block mb-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-              Switch immediately between pre-configured community profiles:
-            </span>
-            <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
-              {allUsers.map(u => {
-                const isActive = currentUser && u.id === currentUser.id;
-                return (
+          <div className="space-y-3">
+            {targetSwitchUser ? (
+              /* Credential Verification Challenge */
+              <form onSubmit={handleConfirmSwitchWithPassword} className={`space-y-4 p-4 rounded-2xl border ${
+                isDark ? 'bg-slate-950/80 border-slate-800' : 'bg-slate-50 border-slate-200'
+              }`}>
+                <div className="flex items-center gap-3">
+                  <div className="shrink-0 flex items-center justify-center">
+                    <UserAvatar avatar={targetSwitchUser.avatar} size="md" />
+                  </div>
+                  <div>
+                    <h4 className={`text-xs font-bold ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>
+                      {targetSwitchUser.name}
+                    </h4>
+                    <p className={`text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                      @{targetSwitchUser.username} • {targetSwitchUser.role}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className={`text-xs font-medium flex items-center gap-1.5 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                      <Lock className="w-3.5 h-3.5 text-blue-500" />
+                      <span>Enter Password to Authenticate *</span>
+                    </label>
+                    <span className={`text-[10px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                      Demo: password123
+                    </span>
+                  </div>
+                  <div className="relative">
+                    <input
+                      type={showSwitchPassword ? 'text' : 'password'}
+                      placeholder="••••••••"
+                      value={switchPassword}
+                      onChange={(e) => setSwitchPassword(e.target.value)}
+                      autoFocus
+                      className={`w-full rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-blue-500 border pr-10 ${
+                        isDark ? 'bg-slate-900 border-slate-700 text-slate-100' : 'bg-white border-slate-300 text-slate-900'
+                      }`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowSwitchPassword(!showSwitchPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200"
+                    >
+                      {showSwitchPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex gap-2">
                   <button
-                    key={u.id}
-                    onClick={() => handleQuickSwitch(u)}
-                    className={`w-full text-left p-2.5 rounded-xl border flex items-center justify-between transition-all cursor-pointer ${
-                      isActive 
-                        ? (isDark ? 'bg-blue-600/20 border-blue-500 text-blue-200' : 'bg-blue-50 border-blue-500 text-blue-900 font-semibold')
-                        : (isDark ? 'bg-slate-950 border-slate-800 hover:border-slate-700 text-slate-300' : 'bg-slate-50 border-slate-200 hover:bg-slate-100 text-slate-700')
+                    type="button"
+                    onClick={() => { setTargetSwitchUser(null); setSwitchPassword(''); setError(null); }}
+                    className={`flex-1 py-2 rounded-xl text-xs font-semibold cursor-pointer transition-colors ${
+                      isDark ? 'bg-slate-800 hover:bg-slate-700 text-slate-300' : 'bg-slate-200 hover:bg-slate-300 text-slate-700'
                     }`}
                   >
-                    <div className="flex items-center gap-2.5">
-                      <span className="shrink-0 flex items-center justify-center">
-                        <UserAvatar avatar={u.avatar} size="sm" />
-                      </span>
-                      <div>
-                        <div className={`text-xs font-bold flex items-center gap-1.5 ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>
-                          <span>{u.name}</span>
-                          <span className={`text-[10px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>(@{u.username})</span>
-                        </div>
-                        <div className={`text-[10px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                          {u.role} • <span className="text-purple-500 font-semibold">{u.xp} XP</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {isActive && (
-                      <span className="px-2 py-0.5 rounded-full bg-blue-600 text-white font-bold text-[9px] uppercase">
-                        Active
-                      </span>
-                    )}
+                    Cancel
                   </button>
-                );
-              })}
-            </div>
+                  <button
+                    type="submit"
+                    className="flex-1 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-lg shadow-blue-500/20 cursor-pointer transition-all flex items-center justify-center gap-1.5"
+                  >
+                    <Shield className="w-3.5 h-3.5" />
+                    <span>Verify & Switch</span>
+                  </button>
+                </div>
+              </form>
+            ) : (
+              /* User List Selection */
+              <>
+                <span className={`text-[11px] block mb-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                  Select an account and enter proper credentials to switch:
+                </span>
+                <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
+                  {allUsers.map(u => {
+                    const isActive = currentUser && u.id === currentUser.id;
+                    return (
+                      <button
+                        key={u.id}
+                        type="button"
+                        onClick={() => handleSelectUserToSwitch(u)}
+                        className={`w-full text-left p-2.5 rounded-xl border flex items-center justify-between transition-all cursor-pointer ${
+                          isActive 
+                            ? (isDark ? 'bg-blue-600/20 border-blue-500 text-blue-200' : 'bg-blue-50 border-blue-500 text-blue-900 font-semibold')
+                            : (isDark ? 'bg-slate-950 border-slate-800 hover:border-slate-700 text-slate-300' : 'bg-slate-50 border-slate-200 hover:bg-slate-100 text-slate-700')
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <span className="shrink-0 flex items-center justify-center">
+                            <UserAvatar avatar={u.avatar} size="sm" />
+                          </span>
+                          <div>
+                            <div className={`text-xs font-bold flex items-center gap-1.5 ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>
+                              <span>{u.name}</span>
+                              <span className={`text-[10px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>(@{u.username})</span>
+                            </div>
+                            <div className={`text-[10px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                              {u.role} • <span className="text-purple-500 font-semibold">{u.xp} XP</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {isActive ? (
+                          <span className="px-2 py-0.5 rounded-full bg-blue-600 text-white font-bold text-[9px] uppercase tracking-wider">
+                            Active
+                          </span>
+                        ) : (
+                          <span className="text-[11px] font-semibold text-blue-400 flex items-center gap-1">
+                            <span>Switch</span>
+                            <ArrowRight className="w-3 h-3" />
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            )}
 
             {/* Logout Option */}
             {currentUser && (

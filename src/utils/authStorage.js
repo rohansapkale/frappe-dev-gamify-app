@@ -193,9 +193,13 @@ class AuthStorageService {
       return { success: false, message: 'No developer profile found with this username or email.' };
     }
 
-    // If password was defined on the user account, verify it (ignore if empty in sandbox demo mode)
-    if (user.password && password && user.password !== password) {
-      return { success: false, message: 'Invalid password. Please try again.' };
+    // Enforce strict credential verification: password is required!
+    if (!password || !password.trim()) {
+      return { success: false, message: 'Password is required to sign in or switch to this account.' };
+    }
+
+    if (user.password && user.password !== password) {
+      return { success: false, message: 'Incorrect credentials. Please enter the correct password.' };
     }
 
     this.setCurrentUser(user);

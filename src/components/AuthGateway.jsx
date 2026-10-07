@@ -229,14 +229,13 @@ export default function AuthGateway({ onAuthSuccess }) {
     onAuthSuccess(guestUser);
   };
 
-  // 5. Handle Community Profile Click
+  // 5. Handle Community Profile Click - Load into Sign In tab requiring proper credentials
   const handleSelectPreseededProfile = (user) => {
     sounds.playClick();
-    const res = authStorage.login(user.username, user.password || '');
-    if (res.success) {
-      triggerConfetti();
-      onAuthSuccess(res.user);
-    }
+    setLoginIdentifier(user.username);
+    setLoginPassword('');
+    setError(null);
+    setTab('login');
   };
 
   return (
@@ -606,11 +605,11 @@ export default function AuthGateway({ onAuthSuccess }) {
               </form>
             )}
 
-            {/* TAB 3: QUICK PROFILES */}
+            {/* TAB 3: COMMUNITY PROFILES DIRECTORY */}
             {tab === 'profiles' && (
               <div className="space-y-3">
                 <span className="text-xs text-slate-400 block mb-2">
-                  Jump right into action using pre-configured developer ranks & progress:
+                  Select a developer profile to authenticate with their credentials:
                 </span>
                 <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
                   {allUsers.map(u => (
@@ -636,7 +635,7 @@ export default function AuthGateway({ onAuthSuccess }) {
                       </div>
 
                       <div className="flex items-center gap-2 text-xs font-semibold text-blue-400 group-hover:translate-x-1 transition-transform">
-                        <span>Select</span>
+                        <span>Sign In</span>
                         <ArrowRight className="w-3.5 h-3.5" />
                       </div>
                     </button>
