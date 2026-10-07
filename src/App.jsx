@@ -18,6 +18,7 @@ import { authStorage } from './utils/authStorage';
 import { triggerConfetti, triggerLevelUpConfetti } from './utils/confettiHelper';
 import { sounds } from './utils/soundEffects';
 import { agentBrain } from './utils/agentBrain';
+import { useTheme } from './context/ThemeContext';
 
 // Helper function to calculate rank from XP
 const getRankInfo = (currentXp = 0) => {
@@ -35,6 +36,8 @@ const getRankInfo = (currentXp = 0) => {
 };
 
 export default function App() {
+  const { isDark } = useTheme();
+
   // Active User session & persistent data
   const [currentUser, setCurrentUser] = useState(() => authStorage.getCurrentUser());
   const [leaderboard, setLeaderboard] = useState(() => authStorage.getLeaderboard());
@@ -229,7 +232,9 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#080c16] text-slate-100 flex flex-col selection:bg-blue-600 selection:text-white">
+    <div className={`min-h-screen flex flex-col selection:bg-blue-600 selection:text-white transition-colors ${
+      isDark ? 'bg-[#080c16] text-slate-100' : 'bg-[#f8fafc] text-slate-800'
+    }`}>
       
       {/* 1. Universal Top Header & Stats */}
       <Header
@@ -324,22 +329,24 @@ export default function App() {
       {/* 3. Level-Up Celebration Modal Toast */}
       {levelUpAlert && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-blue-500 rounded-2xl max-w-sm w-full p-6 text-center space-y-4 shadow-2xl shadow-blue-500/30 animate-slide-down">
+          <div className={`border rounded-2xl max-w-sm w-full p-6 text-center space-y-4 shadow-2xl transition-all animate-slide-down ${
+            isDark ? 'bg-slate-900 border-blue-500 shadow-blue-500/30 text-white' : 'bg-white border-blue-400 shadow-slate-300/50 text-slate-900'
+          }`}>
             <div className="text-5xl">{levelUpAlert.icon}</div>
             <div>
-              <span className="text-[10px] uppercase font-bold tracking-widest text-blue-400">
+              <span className="text-[10px] uppercase font-bold tracking-widest text-blue-500">
                 Rank Promotion Unlocked!
               </span>
-              <h3 className="text-xl font-extrabold text-white mt-1">
+              <h3 className={`text-xl font-extrabold mt-1 ${isDark ? 'text-white' : 'text-slate-900'}`}>
                 Level {levelUpAlert.level}: {levelUpAlert.title}
               </h3>
-              <p className="text-xs text-slate-300 mt-1">
+              <p className={`text-xs mt-1 ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
                 You have advanced on the Frappe & ERPNext developer path!
               </p>
             </div>
             <button
               onClick={() => setLevelUpAlert(null)}
-              className="w-full py-2.5 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-bold text-xs rounded-xl shadow-lg transition-all"
+              className="w-full py-2.5 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-bold text-xs rounded-xl shadow-lg transition-all cursor-pointer"
             >
               Claim Promotion
             </button>
@@ -367,7 +374,9 @@ export default function App() {
       )}
 
       {/* 6. Footer */}
-      <footer className="border-t border-slate-900 py-4 px-6 text-center text-xs text-slate-500">
+      <footer className={`border-t py-4 px-6 text-center text-xs transition-colors ${
+        isDark ? 'border-slate-900 text-slate-500' : 'border-slate-200 text-slate-500 bg-white/50'
+      }`}>
         <p>FrappeQuest: The ERPNext Developer RPG • Built for Frappe & ERPNext Developers</p>
       </footer>
 
