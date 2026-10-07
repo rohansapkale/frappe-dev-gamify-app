@@ -453,7 +453,7 @@ export default function AuthGateway({ onAuthSuccess }) {
                     <label className="text-xs text-slate-300 font-medium">Full Name</label>
                     <input
                       type="text"
-                      placeholder="e.g. Rohan Sharma"
+                      placeholder="e.g. Rohan Sapkale"
                       value={signupName}
                       onChange={(e) => setSignupName(e.target.value)}
                       className="w-full bg-slate-950/80 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500"

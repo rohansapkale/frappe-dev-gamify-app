@@ -10,7 +10,7 @@ const DEFAULT_DEVELOPERS = [
     username: 'rohan_frappe',
     email: 'rohan@frappe.io',
     password: 'password123',
-    name: 'Rohan Sharma',
+    name: 'Rohan Sapkale',
     role: 'Frappe Developer',
     avatar: '👨‍💻',
     specialization: 'Custom App Architecture',
@@ -107,6 +107,30 @@ class AuthStorageService {
       const existing = localStorage.getItem(USERS_STORAGE_KEY);
       if (!existing) {
         localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(DEFAULT_DEVELOPERS));
+      } else {
+        // Migrate existing user record if name was Rohan Sharma
+        const parsed = JSON.parse(existing);
+        let updated = false;
+        const migrated = parsed.map(u => {
+          if (u.id === 'user-01' && u.name === 'Rohan Sharma') {
+            updated = true;
+            return { ...u, name: 'Rohan Sapkale' };
+          }
+          return u;
+        });
+        if (updated) {
+          localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(migrated));
+        }
+      }
+
+      // Also migrate active session if currently logged in as Rohan Sharma
+      const active = localStorage.getItem(CURRENT_SESSION_KEY);
+      if (active) {
+        const parsedActive = JSON.parse(active);
+        if (parsedActive.id === 'user-01' && parsedActive.name === 'Rohan Sharma') {
+          parsedActive.name = 'Rohan Sapkale';
+          localStorage.setItem(CURRENT_SESSION_KEY, JSON.stringify(parsedActive));
+        }
       }
     } catch (e) {
       console.error('Storage init error:', e);
