@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { sounds } from '../utils/soundEffects';
 import { useTheme } from '../context/ThemeContext';
+import UserAvatar from './UserAvatar';
 
 export default function LeaderboardMode({ leaderboard = [], currentUserId }) {
   const { isDark } = useTheme();
@@ -101,7 +102,9 @@ export default function LeaderboardMode({ leaderboard = [], currentUserId }) {
             <div className="absolute -top-4 w-8 h-8 rounded-full bg-slate-600 border-2 border-slate-300 flex items-center justify-center font-bold text-white text-sm shadow-md">
               2
             </div>
-            <div className="text-4xl my-2">{top3[1]?.avatar || '👩‍💻'}</div>
+            <div className="my-2 flex justify-center">
+              <UserAvatar avatar={top3[1]?.avatar || '👩‍💻'} size="lg" />
+            </div>
             <div>
               <h4 className={`text-sm font-bold ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>{top3[1]?.name}</h4>
               <p className={`text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>@{top3[1]?.username} • {top3[1]?.role}</p>
@@ -122,7 +125,9 @@ export default function LeaderboardMode({ leaderboard = [], currentUserId }) {
             <div className="absolute -top-5 w-10 h-10 rounded-full bg-gradient-to-tr from-amber-500 to-yellow-300 border-2 border-white flex items-center justify-center font-extrabold text-slate-950 text-base shadow-lg animate-bounce">
               👑
             </div>
-            <div className="text-5xl my-2">{top3[0]?.avatar || '👨‍💻'}</div>
+            <div className="my-2 flex justify-center scale-110">
+              <UserAvatar avatar={top3[0]?.avatar || '👨‍💻'} size="lg" />
+            </div>
             <div>
               <span className="text-[10px] font-bold uppercase tracking-widest text-amber-500">
                 Grandmaster #1
@@ -146,7 +151,9 @@ export default function LeaderboardMode({ leaderboard = [], currentUserId }) {
             <div className="absolute -top-4 w-8 h-8 rounded-full bg-amber-800 border-2 border-amber-500 flex items-center justify-center font-bold text-amber-100 text-sm shadow-md">
               3
             </div>
-            <div className="text-4xl my-2">{top3[2]?.avatar || '⚡'}</div>
+            <div className="my-2 flex justify-center">
+              <UserAvatar avatar={top3[2]?.avatar || '⚡'} size="lg" />
+            </div>
             <div>
               <h4 className={`text-sm font-bold ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>{top3[2]?.name}</h4>
               <p className={`text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>@{top3[2]?.username} • {top3[2]?.role}</p>
@@ -216,7 +223,9 @@ export default function LeaderboardMode({ leaderboard = [], currentUserId }) {
                     #{rankNumber}
                   </span>
 
-                  <span className="text-2xl shrink-0">{user.avatar || '👨‍💻'}</span>
+                  <span className="shrink-0 flex items-center justify-center">
+                    <UserAvatar avatar={user.avatar || '👨‍💻'} size="sm" />
+                  </span>
 
                   <div>
                     <div className="flex items-center gap-2">

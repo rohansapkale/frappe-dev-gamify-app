@@ -258,9 +258,13 @@ class AuthStorageService {
     );
 
     if (user) {
-      // Update google metadata if needed
+      // Update google metadata and sync avatar/name from Google
       user.authProvider = 'google';
-      if (avatar && !user.avatar) user.avatar = avatar;
+      if (googleId) user.googleId = googleId;
+      if (avatar) user.avatar = avatar;
+      if (name && (user.name === 'Google Developer' || !user.name)) {
+        user.name = name;
+      }
       this.saveAllUsers(users);
       this.setCurrentUser(user);
       return { success: true, user, isNew: false };

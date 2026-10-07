@@ -25,6 +25,7 @@ import {
 import { sounds } from '../utils/soundEffects';
 import { agentBrain } from '../utils/agentBrain';
 import { useTheme } from '../context/ThemeContext';
+import UserAvatar from './UserAvatar';
 
 export default function Header({
   currentUser,
@@ -115,8 +116,8 @@ export default function Header({
               }`}
               title="Click to manage profile or sign out"
             >
-              <div className="relative">
-                <span className="text-2xl">{currentUser?.avatar || '👨‍💻'}</span>
+              <div className="relative flex items-center justify-center">
+                <UserAvatar avatar={currentUser?.avatar} size="sm" />
                 {currentUser?.authProvider === 'google' && (
                   <span className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-white rounded-full flex items-center justify-center shadow-sm">
                     <span className="text-[9px] font-bold text-blue-600">G</span>

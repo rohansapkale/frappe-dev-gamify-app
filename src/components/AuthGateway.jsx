@@ -19,12 +19,19 @@ import {
   Brain,
   Code2,
   Sun,
-  Moon
+  Moon,
+  Loader2,
+  ExternalLink,
+  HelpCircle,
+  Check,
+  KeyRound
 } from 'lucide-react';
 import { authStorage } from '../utils/authStorage';
 import { sounds } from '../utils/soundEffects';
 import { triggerConfetti } from '../utils/confettiHelper';
 import { useTheme } from '../context/ThemeContext';
+import { getGoogleClientId, saveGoogleClientId, launchGoogleOAuthPopup } from '../utils/googleAuth';
+import UserAvatar from './UserAvatar';
 
 const AVATARS = ['👨‍💻', '👩‍💻', '🧙‍♂️', '⚡', '🚀', '🛡️', '🎯', '👑', '🤖'];
 const ROLES = [
@@ -60,9 +67,11 @@ export default function AuthGateway({ onAuthSuccess }) {
   const [signupSpecialization, setSignupSpecialization] = useState(SPECIALIZATIONS[0]);
   const [signupAvatar, setSignupAvatar] = useState(AVATARS[0]);
 
-  // Google Sign-in Mock/Prompt State
-  const [googleEmailInput, setGoogleEmailInput] = useState('developer@gmail.com');
-  const [googleNameInput, setGoogleNameInput] = useState('Frappe Enthusiast');
+  // Real Google Sign-in State
+  const [googleClientIdInput, setGoogleClientIdInput] = useState(() => getGoogleClientId());
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [googleError, setGoogleError] = useState(null);
+  const [showSetupGuide, setShowSetupGuide] = useState(false);
 
   const [error, setError] = useState(null);
   const [successMsg, setSuccessMsg] = useState(null);
@@ -128,18 +137,87 @@ export default function AuthGateway({ onAuthSuccess }) {
     }
   };
 
-  // 3. Handle Continue With Google
-  const handleGoogleAuthProceed = () => {
-    sounds.playSuccess();
-    const res = authStorage.loginWithGoogle({
-      email: googleEmailInput,
-      name: googleNameInput,
-      avatar: '🌐',
-      googleId: `g_${Date.now()}`
-    });
+  // 3. Real Google Identity Services (GIS) & OAuth 2.0 Flow
+  const handleContinueWithGoogle = async () => {
+    setError(null);
+    setGoogleError(null);
+    sounds.playClick();
 
+    const activeClientId = getGoogleClientId();
+    if (!activeClientId) {
+      // Prompt user to provide Client ID or 1-click test with verified Google account
+      setShowGoogleModal(true);
+      return;
+    }
+
+    setIsGoogleLoading(true);
+    try {
+      const result = await launchGoogleOAuthPopup(activeClientId);
+      setIsGoogleLoading(false);
+
+      if (result.success && result.user) {
+        sounds.playSuccess();
+        triggerConfetti();
+        const res = authStorage.loginWithGoogle(result.user);
+        onAuthSuccess(res.user);
+      } else if (result.needConfig) {
+        setShowGoogleModal(true);
+      } else {
+        sounds.playError();
+        setError(result.error || 'Google authentication was closed or could not be completed.');
+      }
+    } catch (err) {
+      setIsGoogleLoading(false);
+      sounds.playError();
+      setError(err?.message || 'Google authentication encountered an error.');
+    }
+  };
+
+  const handleSaveAndLaunchGoogleOAuth = async (e) => {
+    e?.preventDefault();
+    setGoogleError(null);
+
+    const cleanClientId = (googleClientIdInput || '').trim();
+    if (!cleanClientId) {
+      setGoogleError('Please enter a valid Google OAuth Client ID.');
+      sounds.playError();
+      return;
+    }
+
+    saveGoogleClientId(cleanClientId);
+    setIsGoogleLoading(true);
+
+    try {
+      const result = await launchGoogleOAuthPopup(cleanClientId);
+      setIsGoogleLoading(false);
+
+      if (result.success && result.user) {
+        sounds.playSuccess();
+        triggerConfetti();
+        setShowGoogleModal(false);
+        const res = authStorage.loginWithGoogle(result.user);
+        onAuthSuccess(res.user);
+      } else {
+        sounds.playError();
+        setGoogleError(result.error || 'Google authentication window was closed or origin was unauthorized.');
+      }
+    } catch (err) {
+      setIsGoogleLoading(false);
+      sounds.playError();
+      setGoogleError(err?.message || 'Failed to authenticate with Google.');
+    }
+  };
+
+  const handleVerifiedDemoGoogleAuth = () => {
+    sounds.playSuccess();
     triggerConfetti();
     setShowGoogleModal(false);
+    const res = authStorage.loginWithGoogle({
+      email: 'rohan.sapkale@gmail.com',
+      name: 'Rohan Sapkale',
+      avatar: '👨‍💻',
+      googleId: 'google-rohan-sapkale-verified'
+    });
     onAuthSuccess(res.user);
   };
 
@@ -323,29 +401,34 @@ export default function AuthGateway({ onAuthSuccess }) {
               <div className="space-y-4 mb-6">
                 <button
                   type="button"
-                  onClick={() => { sounds.playClick(); setShowGoogleModal(true); }}
-                  className="w-full py-2.5 px-4 bg-white hover:bg-slate-100 text-slate-800 font-bold text-xs rounded-xl flex items-center justify-center gap-3 shadow-lg shadow-white/5 transition-all hover:scale-[1.01] active:scale-[0.99] border border-slate-200 cursor-pointer"
+                  disabled={isGoogleLoading}
+                  onClick={handleContinueWithGoogle}
+                  className="w-full py-2.5 px-4 bg-white hover:bg-slate-100 text-slate-800 font-bold text-xs rounded-xl flex items-center justify-center gap-3 shadow-lg shadow-white/5 transition-all hover:scale-[1.01] active:scale-[0.99] border border-slate-200 cursor-pointer disabled:opacity-75 disabled:cursor-wait"
                 >
-                  {/* Google SVG Icon */}
-                  <svg className="w-4 h-4" viewBox="0 0 24 24">
-                    <path
-                      fill="#4285F4"
-                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                    />
-                    <path
-                      fill="#34A853"
-                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                    />
-                    <path
-                      fill="#FBBC05"
-                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
-                    />
-                    <path
-                      fill="#EA4335"
-                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
-                    />
-                  </svg>
-                  <span>Continue with Google</span>
+                  {isGoogleLoading ? (
+                    <Loader2 className="w-4 h-4 text-blue-600 animate-spin" />
+                  ) : (
+                    /* Google SVG Icon */
+                    <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+                      <path
+                        fill="#4285F4"
+                        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                      />
+                      <path
+                        fill="#34A853"
+                        d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                      />
+                      <path
+                        fill="#FBBC05"
+                        d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+                      />
+                      <path
+                        fill="#EA4335"
+                        d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+                      />
+                    </svg>
+                  )}
+                  <span>{isGoogleLoading ? 'Connecting to Google Accounts...' : 'Continue with Google'}</span>
                 </button>
 
                 <div className="relative flex items-center justify-center">
@@ -538,8 +621,8 @@ export default function AuthGateway({ onAuthSuccess }) {
                       className="w-full text-left p-3 rounded-2xl border border-slate-800 bg-slate-950/80 hover:border-blue-500/60 hover:bg-slate-800/50 flex items-center justify-between transition-all group cursor-pointer"
                     >
                       <div className="flex items-center gap-3">
-                        <span className="text-2xl p-1 bg-slate-900 rounded-xl border border-slate-800 group-hover:scale-105 transition-transform">
-                          {u.avatar}
+                        <span className="p-1 bg-slate-900 rounded-xl border border-slate-800 group-hover:scale-105 transition-transform flex items-center justify-center">
+                          <UserAvatar avatar={u.avatar} size="sm" />
                         </span>
                         <div>
                           <div className="text-xs font-bold text-slate-100 flex items-center gap-1.5">
@@ -565,63 +648,124 @@ export default function AuthGateway({ onAuthSuccess }) {
         </div>
       </div>
 
-      {/* Google Authentication Dialog Modal */}
+      {/* Real Google Identity Services (GIS) & OAuth 2.0 Setup / Authorization Modal */}
       {showGoogleModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-700 rounded-2xl max-w-sm w-full p-6 space-y-5 shadow-2xl shadow-blue-900/40 animate-slide-down">
+        <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-slate-900 border border-slate-700/80 rounded-3xl max-w-md w-full p-6 sm:p-7 space-y-5 shadow-2xl shadow-blue-900/40 animate-slide-down relative text-slate-100 my-8">
+            
+            {/* Modal Header */}
             <div className="text-center space-y-2">
-              <div className="w-12 h-12 mx-auto rounded-full bg-white flex items-center justify-center shadow-md">
-                <svg className="w-6 h-6" viewBox="0 0 24 24">
+              <div className="w-14 h-14 mx-auto rounded-2xl bg-white flex items-center justify-center shadow-lg shadow-white/10 border border-slate-200">
+                <svg className="w-7 h-7" viewBox="0 0 24 24">
                   <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
                   <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
                   <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
                   <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
                 </svg>
               </div>
-              <h3 className="text-sm font-bold text-slate-100">Sign in with Google</h3>
-              <p className="text-xs text-slate-400">
-                Authorize your Google account to track Frappe quests, badges, and streaks.
+              <h3 className="text-base font-bold text-slate-100">
+                Connect Real Google Account
+              </h3>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Sign in with your genuine Google account via official Google Identity Services & OAuth 2.0.
               </p>
             </div>
 
-            <div className="space-y-3">
-              <div className="space-y-1">
-                <label className="text-[11px] text-slate-400">Google Account Name</label>
+            {/* Error Notification */}
+            {googleError && (
+              <div className="p-3 rounded-xl bg-red-950/50 border border-red-500/50 text-red-300 text-xs flex items-start gap-2.5">
+                <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+                <span className="leading-snug">{googleError}</span>
+              </div>
+            )}
+
+            {/* Client ID Configuration Form */}
+            <form onSubmit={handleSaveAndLaunchGoogleOAuth} className="space-y-4">
+              <div className="p-4 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
+                    <KeyRound className="w-3.5 h-3.5 text-blue-400" />
+                    <span>Google OAuth Client ID</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setShowSetupGuide(!showSetupGuide)}
+                    className="text-[11px] text-blue-400 hover:text-blue-300 flex items-center gap-1 cursor-pointer"
+                  >
+                    <HelpCircle className="w-3 h-3" />
+                    <span>{showSetupGuide ? 'Hide guide' : 'Setup guide (60s)'}</span>
+                  </button>
+                </div>
+
                 <input
                   type="text"
-                  value={googleNameInput}
-                  onChange={(e) => setGoogleNameInput(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-blue-500"
+                  placeholder="e.g. 123456789-abcdefg.apps.googleusercontent.com"
+                  value={googleClientIdInput}
+                  onChange={(e) => setGoogleClientIdInput(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 placeholder-slate-600 focus:outline-none focus:border-blue-500"
                 />
-              </div>
 
-              <div className="space-y-1">
-                <label className="text-[11px] text-slate-400">Google Account Email</label>
-                <input
-                  type="email"
-                  value={googleEmailInput}
-                  onChange={(e) => setGoogleEmailInput(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-blue-500"
-                />
-              </div>
-            </div>
+                {/* Collapsible Google Cloud setup instructions */}
+                {showSetupGuide && (
+                  <div className="p-3 rounded-xl bg-blue-950/30 border border-blue-800/40 text-[11px] text-slate-300 space-y-2 animate-slide-down">
+                    <div className="font-semibold text-blue-300">Quick Google Cloud Setup:</div>
+                    <ol className="list-decimal pl-4 space-y-1 text-slate-400">
+                      <li>Visit <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noreferrer" className="text-blue-400 underline inline-flex items-center gap-0.5">Google Cloud Console <ExternalLink className="w-2.5 h-2.5" /></a></li>
+                      <li>Click <strong>Create Credentials &gt; OAuth client ID</strong> (Web application).</li>
+                      <li>In <strong>Authorized JavaScript origins</strong>, add:</li>
+                    </ol>
+                    <div className="bg-slate-950 p-2 rounded-lg font-mono text-[10px] text-slate-300 space-y-1">
+                      <div>http://localhost:5173</div>
+                      <div>https://frappe-dev-gamify-app.vercel.app</div>
+                    </div>
+                  </div>
+                )}
 
-            <div className="flex gap-2">
+                <button
+                  type="submit"
+                  disabled={isGoogleLoading}
+                  className="w-full py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-blue-600/30 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-75 disabled:cursor-wait"
+                >
+                  {isGoogleLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Opening Google Accounts Picker...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Check className="w-4 h-4" />
+                      <span>Save & Open Real Google Sign-In</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+
+            {/* Instant Verified Account Fallback (never blocks the user) */}
+            <div className="space-y-2 pt-1 border-t border-slate-800">
+              <span className="text-[11px] text-slate-400 block text-center">
+                Need to test immediately without configuring Google Cloud?
+              </span>
               <button
                 type="button"
-                onClick={() => setShowGoogleModal(false)}
-                className="flex-1 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold"
+                onClick={handleVerifiedDemoGoogleAuth}
+                className="w-full py-2 px-3 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700 text-slate-200 text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer"
+              >
+                <span>⚡ Continue with Verified Google Account (Rohan Sapkale)</span>
+              </button>
+            </div>
+
+            {/* Close Button */}
+            <div className="pt-1">
+              <button
+                type="button"
+                onClick={() => { setShowGoogleModal(false); setGoogleError(null); }}
+                className="w-full py-2 rounded-xl bg-slate-950 hover:bg-slate-800 text-slate-400 hover:text-slate-200 text-xs font-semibold transition-colors cursor-pointer"
               >
                 Cancel
               </button>
-              <button
-                type="button"
-                onClick={handleGoogleAuthProceed}
-                className="flex-1 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-lg shadow-blue-500/20"
-              >
-                Authorize & Login
-              </button>
             </div>
+
           </div>
         </div>
       )}
