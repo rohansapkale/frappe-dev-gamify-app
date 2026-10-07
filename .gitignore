@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Private Local Documentation (Never Push to Git)
+INTERVIEW_SHOWCASE_GUIDE.md
+interview_showcase_guide.md
