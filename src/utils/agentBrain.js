@@ -1,7 +1,7 @@
 // Dr. Frappe: Autonomous Interactive AI Mentor, Developer IQ Engine & Journey Tracker
 
-import { QUESTS } from '../data/quests';
-import { sounds } from './soundEffects';
+import { QUESTS } from '../data/quests.js';
+import { sounds } from './soundEffects.js';
 
 const STORAGE_PREFIX = 'frappequest_agent_brain_';
 
@@ -254,13 +254,27 @@ export class AgentBrainService {
     let actionStep = `Check your event handler parameters and verify property names.`;
     let shortAdvice = `Let's check the event name and filter syntax!`;
 
+    // Proactively check for missing functions, methods, or attributes using Dr. Frappe
+    const inspection = this.inspectCodeForMissingSymbols(quest, code);
+    let missingNotes = "";
+    if (inspection.hasMissing) {
+      const missingNames = [
+        ...inspection.missingFunctions.map(f => f.label || f.name),
+        ...inspection.missingMethods.map(m => m.label || m.name),
+        ...inspection.missingAttributes.map(a => a.label || a.name)
+      ];
+      missingNotes = `\n⚠️ Dr. Frappe identified missing component(s): ${missingNames.join(', ')}.`;
+    }
+
     if (category === 'Dynamic Query Filtering') {
-      explanation = `The Link field filter wasn't applied or returned invalid filter keys.`;
+      explanation = `The Link field filter wasn't applied or returned invalid filter keys.` + missingNotes;
       mentalModel = `Frappe's 'frm.set_query' expects a callback returning an object: { filters: { fieldname: value } }.`;
       actionStep = `Ensure you returned { filters: { ... } } inside frm.set_query('${quest.doctype.toLowerCase() === 'sales order' ? 'customer' : 'item_code'}', () => ({ filters: ... })).`;
-      shortAdvice = `Ensure frm.set_query returns a valid { filters: { ... } } dictionary!`;
+      shortAdvice = inspection.hasMissing 
+        ? `Dr. Frappe note: check missing ${[...inspection.missingMethods, ...inspection.missingAttributes].map(s => s.name).join(', ')}!`
+        : `Ensure frm.set_query returns a valid { filters: { ... } } dictionary!`;
     } else if (category === 'Syntax / Scope Error') {
-      explanation = `JavaScript runtime encountered a syntax error or an undefined symbol: "${rawError}"`;
+      explanation = `JavaScript runtime encountered a syntax error or an undefined symbol: "${rawError}"` + missingNotes;
       mentalModel = `Scripts run in an isolated Virtual Desk context where only 'frappe', 'frm', and '_' are in scope.`;
       actionStep = `Look for unclosed braces '{', missing commas in objects, or misspelled variable names.`;
       shortAdvice = `Check for unclosed brackets or misspelled variables.`;
@@ -270,15 +284,19 @@ export class AgentBrainService {
       actionStep = `Replace all occurrences of 'cur_frm' with 'frm'.`;
       shortAdvice = `Avoid 'cur_frm'! Always pass and use 'frm' directly.`;
     } else if (category === 'DocType Validation & Hooks') {
-      explanation = `Validation condition failed or error was not raised with frappe.throw.`;
+      explanation = `Validation condition failed or error was not raised with frappe.throw.` + missingNotes;
       mentalModel = `In Frappe Python & server scripts, 'frappe.throw(_("Message"))' stops execution and rolls back the database. 'frappe.msgprint' only displays an alert without aborting!`;
       actionStep = `Use frappe.throw instead of frappe.msgprint to strictly reject invalid states.`;
       shortAdvice = `Remember: frappe.throw aborts the save; frappe.msgprint does not!`;
     } else if (category === 'Desk Custom Buttons') {
-      explanation = `Custom button was not registered or its action callback threw an error.`;
+      explanation = `Custom button was not registered or its action callback threw an error.` + missingNotes;
       mentalModel = `frm.add_custom_button(label, callback, group) binds an action button to the Desk navbar.`;
       actionStep = `Call frm.add_custom_button('Button Label', function() { ... }) inside the refresh(frm) event.`;
       shortAdvice = `Ensure the custom button is added inside the 'refresh' event handler.`;
+    } else {
+      if (missingNotes) {
+        explanation += missingNotes;
+      }
     }
 
     return {
@@ -287,7 +305,8 @@ export class AgentBrainService {
       explanation,
       mentalModel,
       actionStep,
-      shortAdvice
+      shortAdvice,
+      inspection
     };
   }
 
@@ -334,6 +353,125 @@ export class AgentBrainService {
     };
   }
 
+  // --- Dr. Frappe Missing Symbols & Attributes Inspector ---
+  inspectCodeForMissingSymbols(quest, userCode) {
+    if (!quest || !userCode) {
+      return {
+        hasMissing: false,
+        missingFunctions: [],
+        missingMethods: [],
+        missingAttributes: [],
+        presentSymbols: [],
+        score: 100,
+        drFrappeSpeech: "Ready to inspect! Write your code and I'll analyze every function, method, and attribute.",
+        drFrappeDetailedAdvice: "No code provided for inspection."
+      };
+    }
+
+    const lower = userCode.toLowerCase();
+    const missingFunctions = [];
+    const missingMethods = [];
+    const missingAttributes = [];
+    const presentSymbols = [];
+
+    const symbols = quest.expectedSymbols || { functions: [], methods: [], attributes: [] };
+
+    // 1. Inspect required functions & lifecycle handlers
+    (symbols.functions || []).forEach(fn => {
+      const fnName = fn.name.toLowerCase();
+      // Look for function definition patterns or function name presence
+      const hasFn = lower.includes(fnName);
+      if (!hasFn) {
+        missingFunctions.push(fn);
+      } else {
+        presentSymbols.push({ ...fn, type: 'function' });
+      }
+    });
+
+    // 2. Inspect required API methods
+    (symbols.methods || []).forEach(m => {
+      const mName = m.name.toLowerCase();
+      const baseName = mName.replace(/^frappe\./, '').replace(/^frm\./, '');
+      const hasMethod = lower.includes(mName) || (baseName && lower.includes(baseName));
+      if (!hasMethod) {
+        missingMethods.push(m);
+      } else {
+        presentSymbols.push({ ...m, type: 'method' });
+      }
+    });
+
+    // 3. Inspect required fields, parameters, and attributes
+    (symbols.attributes || []).forEach(attr => {
+      const cleanName = attr.name.toLowerCase().replace(/['"]/g, '');
+      const hasAttr = lower.includes(cleanName);
+      if (!hasAttr) {
+        missingAttributes.push(attr);
+      } else {
+        presentSymbols.push({ ...attr, type: 'attribute' });
+      }
+    });
+
+    const totalExpected = (symbols.functions?.length || 0) + (symbols.methods?.length || 0) + (symbols.attributes?.length || 0);
+    const totalMissing = missingFunctions.length + missingMethods.length + missingAttributes.length;
+    const hasMissing = totalMissing > 0;
+    const score = totalExpected > 0 ? Math.max(0, Math.round(((totalExpected - totalMissing) / totalExpected) * 100)) : 100;
+
+    // Dr. Frappe's conversational speech message
+    let drFrappeSpeech = "";
+    if (!hasMissing) {
+      drFrappeSpeech = `🌟 Brilliant work! All required functions, methods, and attributes are present in your code for "${quest.title}". Ready to run!`;
+    } else {
+      const missingParts = [];
+      if (missingFunctions.length > 0) {
+        missingParts.push(`function: ${missingFunctions.map(f => f.label || f.name).join(', ')}`);
+      }
+      if (missingMethods.length > 0) {
+        missingParts.push(`method: ${missingMethods.map(m => m.label || m.name).join(', ')}`);
+      }
+      if (missingAttributes.length > 0) {
+        missingParts.push(`attribute: ${missingAttributes.map(a => a.label || a.name).join(', ')}`);
+      }
+      drFrappeSpeech = `⚠️ Dr. Frappe alert: Missing ${missingParts.join(' | ')}. Check the directions panel for guidance!`;
+    }
+
+    // Dr. Frappe's detailed Markdown guidance
+    const adviceLines = [];
+    if (hasMissing) {
+      adviceLines.push(`### 🤖 Dr. Frappe's Missing Symbols Diagnostic for "${quest.title}"`);
+      if (missingFunctions.length > 0) {
+        adviceLines.push(`\n#### 🔴 Missing Function / Lifecycle Hook:`);
+        missingFunctions.forEach(f => {
+          adviceLines.push(`- **\`${f.label || f.name}\`**: ${f.purpose}\n  👉 *Direction*: ${f.direction}`);
+        });
+      }
+      if (missingMethods.length > 0) {
+        adviceLines.push(`\n#### 🟠 Missing API Method:`);
+        missingMethods.forEach(m => {
+          adviceLines.push(`- **\`${m.label || m.name}\`**: ${m.purpose}\n  👉 *Direction*: ${m.direction}`);
+        });
+      }
+      if (missingAttributes.length > 0) {
+        adviceLines.push(`\n#### 🟡 Missing Attribute / Property:`);
+        missingAttributes.forEach(a => {
+          adviceLines.push(`- **\`${a.label || a.name}\`**: ${a.purpose}\n  👉 *Direction*: ${a.direction}`);
+        });
+      }
+    } else {
+      adviceLines.push(`✅ All architectural functions, methods, and attributes verified by Dr. Frappe!`);
+    }
+
+    return {
+      hasMissing,
+      missingFunctions,
+      missingMethods,
+      missingAttributes,
+      presentSymbols,
+      score,
+      drFrappeSpeech,
+      drFrappeDetailedAdvice: adviceLines.join('\n')
+    };
+  }
+
   // --- Code Reviewer & Assistant ---
   reviewCode(quest, userCode) {
     if (!userCode || !userCode.trim()) {
@@ -347,6 +485,22 @@ export class AgentBrainService {
     const issues = [];
     const positives = [];
     const lower = userCode.toLowerCase();
+
+    // Dr. Frappe Symbol Inspection check
+    const inspection = this.inspectCodeForMissingSymbols(quest, userCode);
+    if (inspection.hasMissing) {
+      inspection.missingFunctions.forEach(fn => {
+        issues.push(`🔴 Missing Function: ${fn.label || fn.name} — ${fn.direction}`);
+      });
+      inspection.missingMethods.forEach(m => {
+        issues.push(`🟠 Missing Method: ${m.label || m.name} — ${m.direction}`);
+      });
+      inspection.missingAttributes.forEach(attr => {
+        issues.push(`🟡 Missing Attribute: ${attr.label || attr.name} — ${attr.direction}`);
+      });
+    } else {
+      positives.push(`✅ All expected lifecycle functions, methods, and attributes are present!`);
+    }
 
     // Check 1: cur_frm usage
     if (lower.includes('cur_frm')) {
@@ -384,7 +538,7 @@ export class AgentBrainService {
       issues.push(`⚠️ Bracket mismatch: Found ${openBraces} opening '{' and ${closeBraces} closing '}'.`);
     }
 
-    const score = Math.max(20, 100 - (issues.length * 25));
+    const score = Math.max(20, 100 - (issues.length * 20));
     let rating = 'Needs Polish';
     if (score >= 90) rating = 'Excellent';
     else if (score >= 70) rating = 'Solid';
@@ -394,8 +548,9 @@ export class AgentBrainService {
       rating,
       issues,
       positives,
+      inspection,
       summary: issues.length === 0
-        ? `✨ Looks very clean! Your syntax and structure align with Frappe best practices. Run the quest to test it!`
+        ? `✨ Looks very clean! Your syntax, functions, and attributes align with Frappe best practices. Run the quest to test it!`
         : `Found ${issues.length} potential area(s) to refine before running test assertions.`
     };
   }
@@ -560,7 +715,14 @@ export class AgentBrainService {
   generateAgentResponse(prompt, currentQuest, currentCode, lastValidation) {
     const q = prompt.toLowerCase();
 
-    // 1. Request to review current code
+    // 1. Request to inspect missing functions, methods, or attributes
+    if (q.includes('missing') || q.includes('symbol') || q.includes('inspect') || q.includes('what am i missing') || q.includes('missing function') || q.includes('missing method') || q.includes('missing attribute')) {
+      if (!currentQuest) return "Select a quest first, and I'll inspect your code for missing functions, methods, and attributes!";
+      const inspection = this.inspectCodeForMissingSymbols(currentQuest, currentCode);
+      return inspection.drFrappeDetailedAdvice;
+    }
+
+    // 2. Request to review current code
     if (q.includes('review') || q.includes('check my code') || q.includes('look at my code')) {
       if (!currentQuest) return "Open a quest first so I can review your code against specific requirements!";
       const review = this.reviewCode(currentQuest, currentCode);
@@ -572,7 +734,7 @@ ${review.issues.map(i => `- ${i}`).join('\n')}
 💡 **Next Move**: ${review.summary}`;
     }
 
-    // 2. Request for step-by-step guidance on tackling the problem
+    // 3. Request for step-by-step guidance on tackling the problem
     if (q.includes('tackle') || q.includes('approach') || q.includes('how to solve') || q.includes('step by step') || q.includes('break down')) {
       if (!currentQuest) return "Select a quest from the Quest Line, and I'll lay out the exact 3-step mental blueprint to tackle it!";
       const blueprint = this.getProblemBlueprint(currentQuest);
@@ -590,16 +752,17 @@ ${blueprint.commonGotchas.map(g => `- ${g}`).join('\n')}
 Ready to write the script? Give Step 1 a shot in the editor!`;
     }
 
-    // 3. Request for hint without full code reveal
-    if (q.includes('hint') || q.includes('clue') || q.includes('stuck')) {
-      if (!currentQuest) return "Pick a quest first, and I will give you a progressive hint!";
-      return `💡 **Architectural Hint for "${currentQuest.title}"**:
-${currentQuest.objectives?.[0] ? `Primary Focus: "${currentQuest.objectives[0]}"` : ''}
+    // 4. Request for directional hints without full code reveal
+    if (q.includes('hint') || q.includes('clue') || q.includes('stuck') || q.includes('direction')) {
+      if (!currentQuest) return "Pick a quest first, and I will give you progressive directional hints!";
+      const hintsList = currentQuest.hints && currentQuest.hints.length > 0
+        ? currentQuest.hints.join('\n\n')
+        : (currentQuest.objectives || []).map((obj, i) => `Direction ${i + 1}: ${obj}`).join('\n\n');
+      return `💡 **Directional Steps & Guidance for "${currentQuest.title}"**:
 
-Remember:
-- In Frappe Desk, UI events trigger inside \`frappe.ui.form.on('${currentQuest.doctype}', { ... })\`.
-- Pay attention to the return format (e.g. if filtering, return an object containing a \`filters\` key).
-- Don't hesitate to test with a small \`console.log\` or \`frappe.show_alert\` to verify your event fires!`;
+${hintsList}
+
+Remember: Follow these directions to implement your script. Do not copy-paste solutions—craft the logic yourself to build your Developer IQ! 🚀`;
     }
 
     // 4. Inquire about Frappe IQ

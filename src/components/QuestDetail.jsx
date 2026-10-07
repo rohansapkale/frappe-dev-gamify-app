@@ -13,7 +13,11 @@ import {
   Code2, 
   Info,
   BookOpen,
-  Award
+  Award,
+  Search,
+  ListOrdered,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import DeskSimulator from './DeskSimulator';
 import ConsoleOutput from './ConsoleOutput';
@@ -33,12 +37,14 @@ export default function QuestDetail({
   const { isDark } = useTheme();
   const [code, setCode] = useState(quest.starterCode);
   const [showHint, setShowHint] = useState(false);
+  const [showDirections, setShowDirections] = useState(true);
   const [copiedSnippet, setCopiedSnippet] = useState(false);
   const [executing, setExecuting] = useState(false);
   
   // AI Mentor & Diagnostic State
   const [showStudio, setShowStudio] = useState(false);
   const [codeReview, setCodeReview] = useState(null);
+  const [symbolInspection, setSymbolInspection] = useState(null);
   const [diagnostic, setDiagnostic] = useState(null);
   const [brainSpeech, setBrainSpeech] = useState('');
   
@@ -56,8 +62,10 @@ export default function QuestDetail({
   useEffect(() => {
     setCode(quest.starterCode);
     setShowHint(false);
+    setShowDirections(true);
     setValidationResult(null);
     setCodeReview(null);
+    setSymbolInspection(null);
     setDiagnostic(null);
     initSimulator(quest.starterCode);
     agentBrain.onQuestSelected(quest);
@@ -140,6 +148,18 @@ export default function QuestDetail({
     sounds.playAgentSpeak();
     const rev = agentBrain.reviewCode(quest, code);
     setCodeReview(rev);
+    if (rev.inspection) {
+      setSymbolInspection(rev.inspection);
+    }
+  };
+
+  const handleInspectMissingSymbols = () => {
+    sounds.playAgentSpeak();
+    const inspection = agentBrain.inspectCodeForMissingSymbols(quest, code);
+    setSymbolInspection(inspection);
+    if (inspection.drFrappeSpeech) {
+      agentBrain.setSpeech(inspection.drFrappeSpeech, inspection.hasMissing ? 'warning' : 'proud');
+    }
   };
 
   const handleResetCode = () => {
@@ -284,28 +304,82 @@ export default function QuestDetail({
               </ul>
             </div>
 
-            {/* Official Frappe Docs Reference Card */}
+            {/* Directional Steps & Guidance (Not Full Code) */}
+            <div className={`p-3.5 rounded-2xl border transition-colors ${
+              isDark ? 'bg-indigo-950/20 border-indigo-500/30' : 'bg-indigo-50/70 border-indigo-200'
+            }`}>
+              <div className="flex items-center justify-between">
+                <div className={`flex items-center gap-2 text-xs font-bold ${isDark ? 'text-indigo-300' : 'text-indigo-800'}`}>
+                  <HelpCircle className="w-4 h-4 text-indigo-500" />
+                  <span>Directional Steps & Guidance (Not Full Code)</span>
+                </div>
+                <button
+                  onClick={() => setShowDirections(!showDirections)}
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                    isDark 
+                      ? 'bg-indigo-600/20 text-indigo-300 hover:bg-indigo-600/30' 
+                      : 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200'
+                  }`}
+                >
+                  <span>{showDirections ? 'Hide Directions' : 'View Directions'}</span>
+                  {showDirections ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                </button>
+              </div>
+
+              {showDirections && (
+                <div className="mt-3 space-y-2 animate-slide-down">
+                  <p className={`text-[11px] ${isDark ? 'text-indigo-300/80' : 'text-indigo-900/80'}`}>
+                    Follow these step-by-step architectural directions to implement the logic yourself:
+                  </p>
+                  <div className="space-y-1.5">
+                    {(quest.hints || quest.objectives || []).map((hint, idx) => (
+                      <div key={idx} className={`p-2.5 rounded-xl text-xs flex items-start gap-2.5 border ${
+                        isDark ? 'bg-slate-950/60 border-slate-800 text-slate-300' : 'bg-white border-indigo-100 text-slate-700 shadow-xs'
+                      }`}>
+                        <span className="w-5 h-5 rounded-lg bg-indigo-500/20 text-indigo-500 font-mono text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">
+                          {idx + 1}
+                        </span>
+                        <span className="leading-relaxed">{hint}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Official Frappe Docs Reference Card (Pseudocode Pattern) */}
             {quest.docReference && (
-              <div className={`rounded-xl p-3 space-y-2 border ${
+              <div className={`rounded-xl p-3.5 space-y-2.5 border ${
                 isDark ? 'bg-blue-950/20 border-blue-500/30' : 'bg-blue-50/70 border-blue-200'
               }`}>
                 <div className="flex items-center justify-between">
-                  <div className={`flex items-center gap-1.5 text-xs font-bold ${isDark ? 'text-blue-300' : 'text-blue-700'}`}>
-                    <BookOpen className="w-3.5 h-3.5 text-blue-500" />
-                    <span>{quest.docReference.title}</span>
+                  <div className="flex items-center gap-2">
+                    <BookOpen className="w-4 h-4 text-blue-500" />
+                    <div>
+                      <div className={`text-xs font-bold ${isDark ? 'text-blue-300' : 'text-blue-800'}`}>
+                        {quest.docReference.title}
+                      </div>
+                      <span className="text-[10px] font-medium text-blue-500/90">
+                        Pseudocode & Architecture Pattern (Not full code)
+                      </span>
+                    </div>
                   </div>
                   <button
                     onClick={handleCopySnippet}
-                    className={`flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium transition-colors cursor-pointer ${
-                      isDark ? 'bg-blue-600/20 text-blue-300 hover:bg-blue-600/40' : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                      isDark ? 'bg-blue-600/20 text-blue-300 hover:bg-blue-600/40 border border-blue-500/30' : 'bg-blue-100 text-blue-700 hover:bg-blue-200 border border-blue-300/60'
                     }`}
+                    title="Copy architectural pseudocode pattern"
                   >
-                    {copiedSnippet ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
-                    <span>{copiedSnippet ? 'Copied!' : 'Copy Snippet'}</span>
+                    {copiedSnippet ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                    <span>{copiedSnippet ? 'Pattern Copied!' : 'Copy Pattern'}</span>
                   </button>
                 </div>
-                <pre className={`p-2 rounded font-mono text-[11px] overflow-x-auto ${
-                  isDark ? 'bg-slate-950 text-slate-300' : 'bg-white border border-slate-200 text-slate-800 shadow-xs'
+                <div className={`text-[11px] italic ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                  💡 Architectural template with placeholders (e.g. &lt;DocType&gt;, &lt;target_field&gt;). Adapt into real code in your editor.
+                </div>
+                <pre className={`p-2.5 rounded-xl font-mono text-[11px] overflow-x-auto leading-relaxed border ${
+                  isDark ? 'bg-slate-950 text-slate-300 border-slate-800' : 'bg-white border-blue-200/80 text-slate-800 shadow-xs'
                 }`}>
                   {quest.docReference.codeSnippet}
                 </pre>
@@ -329,22 +403,23 @@ export default function QuestDetail({
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
                 </div>
                 <p className={`text-xs line-clamp-1 font-sans ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>
-                  {brainSpeech || `Ready to tackle "${quest.title}". Need a strategy or code check?`}
+                  {brainSpeech || `Ready to inspect your script for "${quest.title}". Need a symbol check or code review?`}
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+            <div className="flex items-center gap-2 self-end sm:self-auto shrink-0 flex-wrap">
               <button
-                onClick={() => setShowStudio(true)}
+                onClick={handleInspectMissingSymbols}
                 className={`px-3 py-1.5 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer ${
                   isDark 
-                    ? 'bg-blue-600/20 hover:bg-blue-600/40 border-blue-500/40 text-blue-300' 
-                    : 'bg-white hover:bg-blue-50 border-blue-300 text-blue-700 shadow-xs'
+                    ? 'bg-amber-600/20 hover:bg-amber-600/40 border-amber-500/40 text-amber-300' 
+                    : 'bg-amber-50 hover:bg-amber-100 border-amber-300 text-amber-800 shadow-xs'
                 }`}
+                title="Inspect code for missing functions, methods, or attributes"
               >
-                <Target className="w-3.5 h-3.5 text-blue-500" />
-                <span>Tackle This Quest</span>
+                <Search className="w-3.5 h-3.5 text-amber-500" />
+                <span>Check Missing Symbols</span>
               </button>
               <button
                 onClick={handleReviewMyCode}
@@ -357,8 +432,120 @@ export default function QuestDetail({
                 <Sparkles className="w-3.5 h-3.5 text-purple-500" />
                 <span>Review Code</span>
               </button>
+              <button
+                onClick={() => setShowStudio(true)}
+                className={`px-3 py-1.5 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer ${
+                  isDark 
+                    ? 'bg-blue-600/20 hover:bg-blue-600/40 border-blue-500/40 text-blue-300' 
+                    : 'bg-white hover:bg-blue-50 border-blue-300 text-blue-700 shadow-xs'
+                }`}
+              >
+                <Target className="w-3.5 h-3.5 text-blue-500" />
+                <span>Tackle in Studio</span>
+              </button>
             </div>
           </div>
+
+          {/* Dr. Frappe Missing Symbols & Architecture Inspector Result */}
+          {symbolInspection && (
+            <div className={`border rounded-2xl p-4 space-y-3 animate-slide-down transition-colors ${
+              isDark 
+                ? symbolInspection.hasMissing ? 'bg-slate-900 border-amber-500/40' : 'bg-slate-900 border-emerald-500/40'
+                : symbolInspection.hasMissing ? 'bg-amber-50/50 border-amber-300 shadow-md' : 'bg-emerald-50/50 border-emerald-300 shadow-md'
+            }`}>
+              <div className={`flex items-center justify-between border-b pb-2 ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>
+                <div className="flex items-center gap-2">
+                  <Bot className={`w-4 h-4 ${symbolInspection.hasMissing ? 'text-amber-500' : 'text-emerald-500'}`} />
+                  <span className={`text-xs font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                    Dr. Frappe Code Inspection: Missing Functions & Attributes
+                  </span>
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                    symbolInspection.hasMissing 
+                      ? 'bg-amber-500/20 text-amber-500 border border-amber-500/30' 
+                      : 'bg-emerald-500/20 text-emerald-500 border border-emerald-500/30'
+                  }`}>
+                    {symbolInspection.score}% Architecture Match
+                  </span>
+                </div>
+                <button 
+                  onClick={() => setSymbolInspection(null)} 
+                  className={`text-xs cursor-pointer ${isDark ? 'text-slate-400 hover:text-white' : 'text-slate-400 hover:text-slate-800'}`}
+                >
+                  Dismiss
+                </button>
+              </div>
+
+              {/* Status Message */}
+              <div className={`p-3 rounded-xl text-xs leading-relaxed border ${
+                isDark ? 'bg-slate-950/70 border-slate-800 text-slate-200' : 'bg-white border-slate-200 text-slate-800'
+              }`}>
+                {symbolInspection.drFrappeSpeech}
+              </div>
+
+              {/* Breakdown Cards if missing */}
+              {symbolInspection.hasMissing ? (
+                <div className="space-y-2 text-xs">
+                  {symbolInspection.missingFunctions.length > 0 && (
+                    <div className={`p-3 rounded-xl border space-y-1.5 ${
+                      isDark ? 'bg-rose-950/20 border-rose-500/30 text-rose-300' : 'bg-rose-50 border-rose-200 text-rose-900'
+                    }`}>
+                      <div className="font-bold flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-rose-500">
+                        <span>🔴 Missing Function / Lifecycle Hook</span>
+                      </div>
+                      {symbolInspection.missingFunctions.map((fn, idx) => (
+                        <div key={idx} className="space-y-0.5 pl-2 border-l-2 border-rose-500/40">
+                          <div className="font-mono font-bold">{fn.label || fn.name}</div>
+                          <div className="text-[11px] opacity-90">{fn.purpose}</div>
+                          <div className="text-[11px] font-semibold text-rose-600 dark:text-rose-400">👉 Direction: {fn.direction}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {symbolInspection.missingMethods.length > 0 && (
+                    <div className={`p-3 rounded-xl border space-y-1.5 ${
+                      isDark ? 'bg-amber-950/20 border-amber-500/30 text-amber-300' : 'bg-amber-50 border-amber-200 text-amber-900'
+                    }`}>
+                      <div className="font-bold flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-amber-500">
+                        <span>🟠 Missing API Method</span>
+                      </div>
+                      {symbolInspection.missingMethods.map((m, idx) => (
+                        <div key={idx} className="space-y-0.5 pl-2 border-l-2 border-amber-500/40">
+                          <div className="font-mono font-bold">{m.label || m.name}</div>
+                          <div className="text-[11px] opacity-90">{m.purpose}</div>
+                          <div className="text-[11px] font-semibold text-amber-600 dark:text-amber-400">👉 Direction: {m.direction}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {symbolInspection.missingAttributes.length > 0 && (
+                    <div className={`p-3 rounded-xl border space-y-1.5 ${
+                      isDark ? 'bg-yellow-950/20 border-yellow-500/30 text-yellow-300' : 'bg-yellow-50 border-yellow-200 text-yellow-900'
+                    }`}>
+                      <div className="font-bold flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-yellow-500">
+                        <span>🟡 Missing Attribute / Parameter Property</span>
+                      </div>
+                      {symbolInspection.missingAttributes.map((attr, idx) => (
+                        <div key={idx} className="space-y-0.5 pl-2 border-l-2 border-yellow-500/40">
+                          <div className="font-mono font-bold">{attr.label || attr.name}</div>
+                          <div className="text-[11px] opacity-90">{attr.purpose}</div>
+                          <div className="text-[11px] font-semibold text-yellow-600 dark:text-yellow-400">👉 Direction: {attr.direction}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className={`p-3 rounded-xl border flex items-center gap-2 text-xs ${
+                  isDark ? 'bg-emerald-950/30 border-emerald-500/30 text-emerald-300' : 'bg-emerald-100/70 border-emerald-300 text-emerald-800'
+                }`}>
+                  <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                  <span>All expected lifecycle functions, API methods, and attributes are in place! Execute your test to verify behavior.</span>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Code Review Result Card */}
           {codeReview && (
