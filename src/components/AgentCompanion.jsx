@@ -3,17 +3,13 @@ import {
   Bot, 
   Sparkles, 
   X, 
-  MessageSquare, 
   Brain, 
-  ChevronUp, 
-  Zap, 
-  HelpCircle, 
-  Play, 
   Target,
   Maximize2
 } from 'lucide-react';
 import { agentBrain, AGENT_MOODS } from '../utils/agentBrain';
 import { sounds } from '../utils/soundEffects';
+import { useTheme } from '../context/ThemeContext';
 import AgentMentorStudio from './AgentMentorStudio';
 
 export default function AgentCompanion({
@@ -26,6 +22,7 @@ export default function AgentCompanion({
   const [studioOpen, setStudioOpen] = useState(false);
   const [bubbleVisible, setBubbleVisible] = useState(true);
   const [minimized, setMinimized] = useState(false);
+  const { isDark } = useTheme();
 
   useEffect(() => {
     const unsubscribe = agentBrain.subscribe(newState => {
@@ -75,18 +72,24 @@ export default function AgentCompanion({
         
         {/* Real-Time Talkative Speech Bubble */}
         {bubbleVisible && !minimized && brainState?.speech && (
-          <div className="pointer-events-auto bg-[#0b1120]/95 backdrop-blur-md border border-blue-500/40 rounded-2xl p-3.5 shadow-2xl shadow-blue-900/40 text-xs text-slate-200 space-y-2.5 animate-slide-down transition-all">
-            <div className="flex items-center justify-between border-b border-slate-800/80 pb-1.5">
+          <div className={`pointer-events-auto backdrop-blur-md rounded-2xl p-3.5 shadow-2xl text-xs space-y-2.5 animate-slide-down transition-all dr-frappe-bubble ${
+            isDark 
+              ? 'bg-[#0b1120]/95 border border-blue-500/40 shadow-blue-900/40 text-slate-200' 
+              : 'bg-white/95 border border-slate-300 shadow-slate-400/20 text-slate-800'
+          }`}>
+            <div className={`flex items-center justify-between border-b pb-1.5 ${isDark ? 'border-slate-800/80' : 'border-slate-200'}`}>
               <div className="flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                <span className="font-extrabold text-blue-400 text-[11px] tracking-wide uppercase">
+                <span className="font-extrabold text-blue-500 text-[11px] tracking-wide uppercase">
                   Dr. Frappe (AI Mentor)
                 </span>
               </div>
               <div className="flex items-center gap-1">
                 <button
                   onClick={() => setBubbleVisible(false)}
-                  className="text-slate-400 hover:text-white p-0.5 rounded transition-colors"
+                  className={`p-0.5 rounded transition-colors cursor-pointer ${
+                    isDark ? 'text-slate-400 hover:text-white' : 'text-slate-400 hover:text-slate-800'
+                  }`}
                   title="Dismiss message"
                 >
                   <X className="w-3.5 h-3.5" />
@@ -94,7 +97,7 @@ export default function AgentCompanion({
               </div>
             </div>
 
-            <p className="leading-relaxed text-slate-100 font-sans">
+            <p className={`leading-relaxed font-sans ${isDark ? 'text-slate-100' : 'text-slate-700'}`}>
               {brainState.speech}
             </p>
 
@@ -102,21 +105,33 @@ export default function AgentCompanion({
             <div className="flex flex-wrap gap-1.5 pt-1">
               <button
                 onClick={() => handleOpenStudio('How to tackle this quest step by step')}
-                className="px-2.5 py-1 rounded-lg bg-blue-600/20 hover:bg-blue-600/40 border border-blue-500/30 text-blue-300 font-semibold text-[11px] flex items-center gap-1 transition-all active:scale-95"
+                className={`px-2.5 py-1 rounded-lg border font-semibold text-[11px] flex items-center gap-1 transition-all active:scale-95 cursor-pointer ${
+                  isDark 
+                    ? 'bg-blue-600/20 hover:bg-blue-600/40 border-blue-500/30 text-blue-300' 
+                    : 'bg-blue-50 hover:bg-blue-100 border-blue-200 text-blue-700'
+                }`}
               >
-                <Target className="w-3 h-3 text-blue-400" />
+                <Target className="w-3 h-3 text-blue-500" />
                 <span>Coach Me</span>
               </button>
               <button
                 onClick={() => handleOpenStudio('Review my current code for any syntax errors or missing logic')}
-                className="px-2.5 py-1 rounded-lg bg-purple-600/20 hover:bg-purple-600/40 border border-purple-500/30 text-purple-300 font-semibold text-[11px] flex items-center gap-1 transition-all active:scale-95"
+                className={`px-2.5 py-1 rounded-lg border font-semibold text-[11px] flex items-center gap-1 transition-all active:scale-95 cursor-pointer ${
+                  isDark 
+                    ? 'bg-purple-600/20 hover:bg-purple-600/40 border-purple-500/30 text-purple-300' 
+                    : 'bg-purple-50 hover:bg-purple-100 border-purple-200 text-purple-700'
+                }`}
               >
-                <Sparkles className="w-3 h-3 text-purple-400" />
+                <Sparkles className="w-3 h-3 text-purple-500" />
                 <span>Review Code</span>
               </button>
               <button
                 onClick={() => handleOpenStudio()}
-                className="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white text-[11px] transition-all ml-auto"
+                className={`px-2 py-1 rounded-lg text-[11px] transition-all ml-auto cursor-pointer ${
+                  isDark 
+                    ? 'bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white' 
+                    : 'bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900'
+                }`}
                 title="Open full mentor studio"
               >
                 <Maximize2 className="w-3 h-3" />
@@ -130,12 +145,16 @@ export default function AgentCompanion({
           {/* Quick IQ Pill */}
           <button
             onClick={() => handleOpenStudio()}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-900/90 hover:bg-slate-800 border border-blue-500/30 text-slate-200 text-xs font-bold shadow-lg transition-all hover:scale-105 active:scale-95"
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-bold shadow-lg transition-all hover:scale-105 active:scale-95 cursor-pointer ${
+              isDark 
+                ? 'bg-slate-900/90 hover:bg-slate-800 border-blue-500/30 text-slate-200' 
+                : 'bg-white hover:bg-slate-50 border-slate-300 text-slate-800 shadow-slate-300/40'
+            }`}
             title="Click to view your Frappe Developer IQ breakdown"
           >
-            <Brain className="w-3.5 h-3.5 text-blue-400" />
-            <span className="text-blue-400">{brainState?.iq || 105} IQ</span>
-            <span className="text-[10px] text-slate-400">• {rank.badge}</span>
+            <Brain className="w-3.5 h-3.5 text-blue-500" />
+            <span className="text-blue-500">{brainState?.iq || 105} IQ</span>
+            <span className={`text-[10px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>• {rank.badge}</span>
           </button>
 
           {/* Dr. Frappe Animated Orb */}
@@ -148,12 +167,18 @@ export default function AgentCompanion({
                 sounds.playClick();
               }
             }}
-            className={`relative w-14 h-14 rounded-2xl bg-gradient-to-tr ${getMoodAura()} text-white p-0.5 shadow-2xl flex items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95 group`}
+            className={`relative w-14 h-14 rounded-2xl bg-gradient-to-tr ${getMoodAura()} text-white p-0.5 shadow-2xl flex items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95 group cursor-pointer`}
             title="Chat with Dr. Frappe (AI Mentor)"
           >
-            <div className="w-full h-full rounded-[14px] bg-slate-950 flex items-center justify-center relative overflow-hidden">
-              <Bot className="w-7 h-7 text-white group-hover:rotate-12 transition-transform duration-300" />
-              <div className="absolute top-1 right-1 w-2.5 h-2.5 rounded-full bg-emerald-400 border border-slate-950 animate-pulse" />
+            <div className={`w-full h-full rounded-[14px] flex items-center justify-center relative overflow-hidden transition-colors dr-frappe-orb-inner ${
+              isDark ? 'bg-slate-950' : 'bg-white'
+            }`}>
+              <Bot className={`w-7 h-7 group-hover:rotate-12 transition-transform duration-300 ${
+                isDark ? 'text-white' : 'text-blue-600'
+              }`} />
+              <div className={`absolute top-1 right-1 w-2.5 h-2.5 rounded-full bg-emerald-400 border animate-pulse ${
+                isDark ? 'border-slate-950' : 'border-white'
+              }`} />
             </div>
           </button>
         </div>

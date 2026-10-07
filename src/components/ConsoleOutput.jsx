@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Terminal, CheckCircle2, XCircle, Code2, Trash2, ShieldCheck, Sparkles } from 'lucide-react';
+import { Terminal, CheckCircle2, XCircle, Code2, Trash2, ShieldCheck } from 'lucide-react';
 
 export default function ConsoleOutput({ logs = [], validationResult = null, docState = null, onClearLogs }) {
   const [activeTab, setActiveTab] = useState('trace'); // 'trace' | 'assertions' | 'doc'
