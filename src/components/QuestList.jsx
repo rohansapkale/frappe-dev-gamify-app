@@ -18,13 +18,15 @@ import {
   Filter, 
   Flame, 
   Award, 
-  Zap 
+  Zap,
+  ShieldCheck
 } from 'lucide-react';
 import { sounds } from '../utils/soundEffects';
 import { useTheme } from '../context/ThemeContext';
 
 const TRACK_ICONS = {
   'interview-mastery': Target,
+  'enterprise-missions': ShieldCheck,
   'client-scripts': Terminal,
   'server-scripts': Server,
   'erpnext-scenarios': Briefcase,

@@ -12,6 +12,7 @@ import AuthModal from './components/AuthModal';
 import AuthGateway from './components/AuthGateway';
 import AgentCompanion from './components/AgentCompanion';
 import AgentJourneyMode from './components/AgentJourneyMode';
+import EnterpriseMissionsMode from './components/EnterpriseMissionsMode';
 
 import { DEVELOPER_RANKS } from './data/achievements';
 import { authStorage } from './utils/authStorage';
@@ -47,12 +48,13 @@ export default function App() {
   const [coins, setCoins] = useState(currentUser?.coins || 50);
   const [streak, setStreak] = useState(currentUser?.streak || 1);
   const [completedQuests, setCompletedQuests] = useState(currentUser?.completedQuests || []);
+  const [masteredMissions, setMasteredMissions] = useState(currentUser?.masteredMissions || []);
   const [unlockedBadges, setUnlockedBadges] = useState(currentUser?.unlockedBadges || []);
   const [unlockedSkills, setUnlockedSkills] = useState(currentUser?.unlockedSkills || ['node-client-basics']);
   const [sandboxCount, setSandboxCount] = useState(0);
 
   // App Navigation & Modals
-  const [currentMode, setCurrentMode] = useState('quests'); // 'quests' | 'quiz' | 'leaderboard' | 'sandbox' | 'docs' | 'tree' | 'agent'
+  const [currentMode, setCurrentMode] = useState('quests'); // 'quests' | 'missions' | 'quiz' | 'leaderboard' | 'sandbox' | 'docs' | 'tree' | 'agent'
   const [activeQuest, setActiveQuest] = useState(null);
   const [showAchievements, setShowAchievements] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -76,6 +78,7 @@ export default function App() {
     setCoins(user?.coins || 50);
     setStreak(user?.streak || 1);
     setCompletedQuests(user?.completedQuests || []);
+    setMasteredMissions(user?.masteredMissions || []);
     setUnlockedBadges(user?.unlockedBadges || []);
     setUnlockedSkills(user?.unlockedSkills || ['node-client-basics']);
     setLeaderboard(authStorage.getLeaderboard());
@@ -98,12 +101,13 @@ export default function App() {
         level: getRankInfo(xp).level,
         rankTitle: getRankInfo(xp).title,
         completedQuests,
+        masteredMissions,
         unlockedBadges,
         unlockedSkills
       });
       setLeaderboard(authStorage.getLeaderboard());
     }
-  }, [xp, coins, streak, completedQuests, unlockedBadges, unlockedSkills, currentUser?.id]);
+  }, [xp, coins, streak, completedQuests, masteredMissions, unlockedBadges, unlockedSkills, currentUser?.id]);
 
   const rank = getRankInfo(xp);
   const level = rank.level;
@@ -202,6 +206,24 @@ export default function App() {
     }
   };
 
+  const handleToggleMasterMission = (missionId, isNowMastered, earnedXp, earnedCoins) => {
+    if (isNowMastered) {
+      setMasteredMissions(prev => {
+        if (!prev.includes(missionId)) return [...prev, missionId];
+        return prev;
+      });
+      awardRewards(earnedXp || 100, earnedCoins || 40);
+    } else {
+      setMasteredMissions(prev => prev.filter(id => id !== missionId));
+    }
+  };
+
+  const handleTryMissionInSandbox = (code, doctype) => {
+    setSandboxInitialCode(code);
+    setCurrentMode('sandbox');
+    sounds.playClick();
+  };
+
   const handleResetProgress = () => {
     if (window.confirm("Are you sure you want to reset your developer progress?")) {
       setXp(0);
@@ -271,6 +293,16 @@ export default function App() {
               onCompleteQuest={handleCompleteQuest}
             />
           )
+        )}
+
+        {/* Mode: Enterprise 50 Missions */}
+        {currentMode === 'missions' && (
+          <EnterpriseMissionsMode
+            currentUser={currentUser}
+            masteredMissions={masteredMissions}
+            onToggleMasterMission={handleToggleMasterMission}
+            onTryInSandbox={handleTryMissionInSandbox}
+          />
         )}
 
         {/* Mode 2: Daily 10-MCQ Bug Hunt */}
