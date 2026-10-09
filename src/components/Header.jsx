@@ -20,7 +20,8 @@ import {
   Bot,
   Brain,
   Sun,
-  Moon
+  Moon,
+  ShieldCheck
 } from 'lucide-react';
 import { sounds } from '../utils/soundEffects';
 import { agentBrain } from '../utils/agentBrain';
@@ -63,7 +64,8 @@ export default function Header({
 
   const navItems = [
     { id: 'quests', label: 'Quest Line & Drills', icon: Layers, count: completedQuests.length },
-    { id: 'agent', label: 'AI Mentor & IQ Journey', icon: Bot, isHighlight: true, badge: `${agentIq} IQ` },
+    { id: 'missions', label: 'Enterprise 50 Missions', icon: ShieldCheck, isHighlight: true, badge: '50 Scenarios' },
+    { id: 'agent', label: 'AI Mentor & IQ Journey', icon: Bot, badge: `${agentIq} IQ` },
     { id: 'quiz', label: 'Daily 10-MCQ Bug Hunt', icon: HelpCircle },
     { id: 'leaderboard', label: 'Global Leaderboard', icon: Trophy },
     { id: 'sandbox', label: 'Desk Sandbox', icon: Terminal },

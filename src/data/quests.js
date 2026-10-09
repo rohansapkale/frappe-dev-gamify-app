@@ -57,6 +57,14 @@ export const TRACKS = [
     color: '#06b6d4',
     gradient: 'from-cyan-500/20 to-blue-500/20',
   },
+  {
+    id: 'enterprise-missions',
+    title: 'Enterprise 50 Architecture Missions',
+    description: 'Solve production-grade scenarios: Tare weighment checks, idempotent late fees, batch uniqueness, Redis caching, and zero-downtime migrations.',
+    icon: 'ShieldCheck',
+    color: '#6366f1',
+    gradient: 'from-indigo-500/20 to-purple-500/20',
+  },
 ];
 
 
@@ -2059,6 +2067,117 @@ class CRMDeal(Document):
         return { pass: false, error: "self.billing_status was not updated to 'Pending Webhook Sync'." };
       }
       return { pass: true, message: "Outstanding! You implemented mission-critical enterprise sales governance and automated billing sync triggers!" };
+    }
+  },
+
+  // TRACK: ENTERPRISE 50 ARCHITECTURE MISSIONS
+  {
+    id: 'ent-01-gross-tare-weight-guard',
+    trackId: 'enterprise-missions',
+    title: 'Enterprise Drill: Material Dispatch Gross vs Tare Guard',
+    level: 'Intermediate',
+    xp: 260,
+    coins: 100,
+    doctype: 'Material Dispatch Note',
+    language: 'python',
+    summary: 'Write Python controller validation ensuring loaded gross weight strictly exceeds carrier tare weight.',
+    briefing: `### 🎯 Enterprise Architecture Scenario:
+In physical warehouse dispatch operations, freight vehicles arrive empty (tare weight) and depart loaded (gross weight). If an operator or automated scale enters a gross weight less than or equal to the tare weight, the entry must be rejected immediately to prevent billing corruption or theft.
+
+Your Task in \`material_dispatch_note.py\`:
+1. In the \`validate(self)\` method, read:
+   - \`gross = float(self.gross_weight or 0)\`
+   - \`tare = float(self.tare_weight or 0)\`
+2. If \`gross <= tare\`:
+   Raise \`frappe.throw(_("Gross weight must be strictly greater than tare weight"))\`.
+3. If valid, set \`self.net_weight = round(gross - tare, 3)\`.`,
+    objectives: [
+      'Define the validate(self) method on MaterialDispatchNote',
+      'Compare gross_weight against tare_weight',
+      'Raise frappe.throw when gross <= tare',
+      'Derive and set net_weight upon successful validation'
+    ],
+    hints: [
+      "Direction 1: Inside validate(self), cast both gross_weight and tare_weight to floats using float(val or 0).",
+      "Direction 2: Check if gross <= tare. If so, invoke frappe.throw(_('Gross weight must be strictly greater than tare weight')).",
+      "Direction 3: Assign self.net_weight = round(gross - tare, 3) when valid."
+    ],
+    expectedSymbols: {
+      functions: [
+        { name: 'validate', label: 'validate(self)', purpose: 'Controller lifecycle validation hook', direction: 'Define validate(self) method' }
+      ],
+      methods: [
+        { name: 'frappe.throw', label: 'frappe.throw()', purpose: 'Aborts transaction on invalid weight condition', direction: 'Call frappe.throw on gross <= tare' }
+      ],
+      attributes: [
+        { name: 'gross_weight', label: 'self.gross_weight', purpose: 'Loaded carrier weight attribute', direction: 'Read self.gross_weight' },
+        { name: 'tare_weight', label: 'self.tare_weight', purpose: 'Empty carrier weight attribute', direction: 'Read self.tare_weight' },
+        { name: 'net_weight', label: 'self.net_weight', purpose: 'Calculated cargo weight', direction: 'Set self.net_weight' }
+      ]
+    },
+    docReference: {
+      title: 'Frappe Document Controller Validation',
+      url: 'https://frappeframework.com/docs/user/en/basics/doctypes/controllers#validation',
+      patternType: 'pseudocode',
+      codeSnippet: `class MaterialDispatchNote(Document):
+    def validate(self):
+        gross = float(self.gross_weight or 0)
+        tare = float(self.tare_weight or 0)
+        if gross <= tare:
+            frappe.throw(_("Gross weight must be strictly greater than tare weight"))
+        self.net_weight = round(gross - tare, 3)`
+    },
+    starterCode: `import frappe
+from frappe import _
+from frappe.model.document import Document
+
+class MaterialDispatchNote(Document):
+    def validate(self):
+        # TODO: Ensure gross_weight > tare_weight, else frappe.throw
+        # Set self.net_weight = round(gross - tare, 3)
+        pass`,
+    solutionCode: `import frappe
+from frappe import _
+from frappe.model.document import Document
+
+class MaterialDispatchNote(Document):
+    def validate(self):
+        gross = float(self.gross_weight or 0)
+        tare = float(self.tare_weight or 0)
+        if gross <= tare:
+            frappe.throw(_("Gross weight must be strictly greater than tare weight"))
+        self.net_weight = round(gross - tare, 3)`,
+    testDoc: {
+      doctype: 'Material Dispatch Note',
+      name: 'DISP-2026-0001',
+      carrier: 'Apex Freightways',
+      vehicle_plate: 'MH-12-AB-9090',
+      gross_weight: 42.5,
+      tare_weight: 14.2,
+      net_weight: 0,
+      status: 'Draft'
+    },
+    validate: (logs, context) => {
+      const runner = context.pythonRunner;
+      if (!runner) {
+        return { pass: false, error: "Python simulator did not initialize." };
+      }
+      const invalidDoc = { doctype: 'Material Dispatch Note', gross_weight: 12.0, tare_weight: 15.0 };
+      const res1 = runner.runValidation(invalidDoc);
+      if (!res1.threw) {
+        return { pass: false, error: "frappe.throw was not called when gross weight was less than tare weight." };
+      }
+      const equalDoc = { doctype: 'Material Dispatch Note', gross_weight: 15.0, tare_weight: 15.0 };
+      const res2 = runner.runValidation(equalDoc);
+      if (!res2.threw) {
+        return { pass: false, error: "frappe.throw was not called when gross weight equaled tare weight." };
+      }
+      const validDoc = { doctype: 'Material Dispatch Note', gross_weight: 35.5, tare_weight: 10.5 };
+      runner.runValidation(validDoc);
+      if (Math.abs(validDoc.net_weight - 25.0) > 0.01) {
+        return { pass: false, error: "self.net_weight was not correctly calculated as 25.0 MT." };
+      }
+      return { pass: true, message: "Superb! You implemented industrial weighment sanity validation with standard Frappe controller conventions!" };
     }
   }
 ];
