@@ -1,0 +1,149 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - development
+  pull_request:
+    branches:
+      - main
+      - development
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # -------------------------------------------------------------
+  # Job 1: Lint & Unit / Integrity Tests
+  # -------------------------------------------------------------
+  test-and-lint:
+    name: 🧪 Lint & Test Suite
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js Runtime
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Run Code Linter (oxlint)
+        run: npm run lint
+
+      - name: Run Unit & Integrity Tests
+        run: npm test
+
+  # -------------------------------------------------------------
+  # Job 2: Vite Production Build Verification
+  # -------------------------------------------------------------
+  build-check:
+    name: 🏗️ Production Build Check
+    needs: test-and-lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js Runtime
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Build Vite Application
+        run: npm run build
+
+      - name: Upload Production Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-bundle
+          path: dist
+          retention-days: 7
+
+  # -------------------------------------------------------------
+  # Job 3: Vercel Deployment (Production on 'main', Preview on PR)
+  # -------------------------------------------------------------
+  deploy-vercel:
+    name: 🚀 Deploy to Vercel
+    needs: [test-and-lint, build-check]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js Runtime
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Inspect Vercel Configuration
+        id: vercel-secrets-check
+        run: |
+          if [ -n "${{ secrets.VERCEL_TOKEN }}" ]; then
+            echo "has_token=true" >> $GITHUB_OUTPUT
+            echo "Vercel credentials detected. Proceeding with GitHub Actions Vercel CLI deployment."
+          else
+            echo "has_token=false" >> $GITHUB_OUTPUT
+            echo "::notice title=Vercel Integration Info::VERCEL_TOKEN is not configured in GitHub Secrets. If your repo is connected to Vercel via GitHub App, Vercel deploys automatically upon passing these status checks. To deploy via GitHub Actions CLI, add VERCEL_TOKEN, VERCEL_ORG_ID, and VERCEL_PROJECT_ID."
+          fi
+
+      - name: Install Vercel CLI
+        if: steps.vercel-secrets-check.outputs.has_token == 'true'
+        run: npm install --global vercel@latest
+
+      # --- Deploy Preview (for Pull Requests) ---
+      - name: Pull Vercel Preview Environment
+        if: steps.vercel-secrets-check.outputs.has_token == 'true' && github.event_name == 'pull_request'
+        run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      - name: Build Preview Artifacts
+        if: steps.vercel-secrets-check.outputs.has_token == 'true' && github.event_name == 'pull_request'
+        run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      - name: Deploy to Vercel Preview
+        if: steps.vercel-secrets-check.outputs.has_token == 'true' && github.event_name == 'pull_request'
+        run: vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      # --- Deploy Production (for Push to main) ---
+      - name: Pull Vercel Production Environment
+        if: steps.vercel-secrets-check.outputs.has_token == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      - name: Build Production Artifacts
+        if: steps.vercel-secrets-check.outputs.has_token == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      - name: Deploy to Vercel Production
+        if: steps.vercel-secrets-check.outputs.has_token == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
